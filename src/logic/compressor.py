@@ -40,14 +40,3 @@ def compress_block(block, d):
     ff = np.round(ff)
     ff = np.clip(ff, 0, 255)
     return ff.astype(np.uint8)
-
-
-def plot_images(original_img_array, compressed_img_array, h_new, w_new, F, d):
-    plt.figure(figsize=(10, 5))
-    plt.subplot(1, 2, 1)
-    plt.imshow(original_img_array[:h_new, :w_new], cmap='gray')
-    plt.title("Originale (ritagliata)")
-    plt.subplot(1, 2, 2)
-    plt.imshow(compressed_img_array, cmap='gray')
-    plt.title(f"Compressione (F={F}, d={d})")
-    plt.show()
