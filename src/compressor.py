@@ -86,28 +86,38 @@ def reconstruct_image(blocks, img_shape, F):
 root = tk.Tk()
 root.withdraw()
 
-filepath = filedialog.askopenfilename(
-    title="Seleziona immagine BMP",
-    filetypes=[("Bitmap", "*.bmp")]
+filename = simpledialog.askstring(
+    "Input",
+    "Insert the file name:"
 )
 
-if not filepath:
-    messagebox.showinfo("Info", "Nessun file selezionato")
+if not filename:
+    messagebox.showinfo("Info", "Any name inserted")
     exit()
 
-img = Image.open(filepath).convert('L')
+filepath = f"data/{filename}"
+
+try:
+    img = Image.open(filepath).convert('L')
+
+except FileNotFoundError:
+    messagebox.showerror(
+        "Error",
+        f"File not found:\n{filepath}"
+    )
+    exit()
 
 img_array = np.array(img)
 
 F = simpledialog.askinteger(
     "Input",
-    "Inserisci dimensione   blocks F:",
+    "Insert blocks F dimension:",
     minvalue=1
 )
 
 d = simpledialog.askinteger(
     "Input",
-    f"Inserisci d (0 <= d <= {2*F - 2}):",
+    f"Insert d (0 <= d <= {2*F - 2}):",
     minvalue=0,
     maxvalue=2*F - 2
 )
@@ -126,4 +136,4 @@ img_out = Image.fromarray(reconstructed_img)
 
 img_out.show()
 
-img_out.save("compressed.bmp")
+img_out.save(filename.split(".")[0] + "compressed" + ".bmp")
