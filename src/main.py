@@ -1,12 +1,12 @@
 import sys
 import os
 import numpy as np
-from io import BytesIO
 
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtCore import QFile, Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import QFile, Qt, QEvent
+from PySide6.QtGui import QPixmap, QImage
 
 from PIL import Image
 
@@ -16,11 +16,14 @@ class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # Forward decl
+        # Variabili
         self.F = 1
         self.d = 0
+        self.FMax = 0
         self.dMax = 0
         self.img_caricata = None
+        self.larghezza = 0
+        self.altezza = 0
 
         # Trova il percorso assoluto del file form.ui nella cartella gui
         base_dir = os.path.dirname(__file__)
@@ -36,23 +39,33 @@ class MainWindow(QMainWindow):
             # Modifiche iniziali
             self.setCentralWidget(self.ui.centralWidget())
             self.showMaximized()
-            self.stile_riquadro = """
-                QLabel {
-                    border: 2px solid #bdc3c7;      /* Bordo grigio chiaro */
-                    border-radius: 6px;             /* Angoli leggermente arrotondati */
-                    background-color: #f8f9fa;      /* Sfondo grigio chiarissimo */
-                    padding: 4px;                   /* Spazio interno tra bordo e immagine */
-                }
-            """
 
             self.setWindowTitle("Compressore JPEG")
 
+            # Creo le scene per gestire le immagini dentro i riquadri
+            self.scena_orig = QGraphicsScene(self)
+            self.scena_compr = QGraphicsScene(self)
+            self.ui.imgOrigView.setScene(self.scena_orig)
+            self.ui.imgComprView.setScene(self.scena_compr)
+
+            # Abilito zoom
+            self.ui.imgOrigView.installEventFilter(self)
+            self.ui.imgComprView.installEventFilter(self)
+
+            self.ui.imgOrigView.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+            self.ui.imgOrigView.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
+            self.ui.imgComprView.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+            self.ui.imgComprView.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
+
+            # Abilito panning (con puntatore classico)
+            self.ui.imgOrigView.setDragMode(QGraphicsView.ScrollHandDrag)
+            self.ui.imgComprView.setDragMode(QGraphicsView.ScrollHandDrag)
+            self.ui.imgOrigView.viewport().setCursor(Qt.ArrowCursor)
+            self.ui.imgComprView.viewport().setCursor(Qt.ArrowCursor)
+
             # Collego UI con Segnali e Slot
-            # 2 Bottoni
             self.ui.fileSysPushButton.clicked.connect(self.filesystem_click)
             self.ui.calcolaImgButton.clicked.connect(self.calcolaImg_click)
-
-            # 2 Spin box per valori
             self.ui.fSpinBox.valueChanged.connect(self.spinBoxF)
             self.ui.dSpinBox.valueChanged.connect(self.spinBoxD)
 
@@ -73,23 +86,22 @@ class MainWindow(QMainWindow):
                 # Carico img
                 self.img_caricata = Image.open(file_path).convert('L')
 
-                larghezza, altezza = self.img_caricata.size
+                self.larghezza, self.altezza = self.img_caricata.size
+                self.dMax = 2 * self.F - 2
+                self.FMax = min(self.larghezza, self.altezza)
 
                 # Aggiorno limiti spin box
                 self.ui.fSpinBox.setEnabled(True);
-                self.ui.fSpinBox.setMinimum(1)
-                self.ui.fSpinBox.setMaximum(larghezza)
+                self.ui.fSpinBox.setMaximum(self.FMax)
 
                 self.ui.dSpinBox.setEnabled(True);
-                self.ui.dSpinBox.setMinimum(0)
-                self.ui.dSpinBox.setMaximum(altezza)
+                self.ui.dSpinBox.setMaximum(self.dMax)
 
                 # Messaggio sul bottone (log)
                 self.ui.fileSysPushButton.setStyleSheet("font-style: italic;")
                 self.ui.fileSysPushButton.setText(f"Immagine: {file_path}")
 
-                self.dMax = 2 * self.F - 2
-                self.ui.fLabel.setText(f"Inserisci la grandezza dei blocchi F (Max {larghezza})")
+                self.ui.fLabel.setText(f"Inserisci la grandezza dei blocchi F (Max {self.FMax})")
                 self.ui.dLabel.setText(f"Inserisci la soglia di taglio d (Max {self.dMax})")
                 self.ui.calcolaImgButton.setEnabled(True);
 
@@ -99,6 +111,44 @@ class MainWindow(QMainWindow):
                 self.ui.fileSysPushButton.setText(f"Errore caricamento: {e}")
                 self.immagine_path = None
                 self.img_caricata = None
+
+    # Metodo più efficiente rispetto alla conversione con BytesIO
+    def numpy_to_pixmap(self, array_2d):
+        array_uint8 = np.ascontiguousarray(array_2d.astype(np.uint8))
+        altezza, larghezza = array_uint8.shape
+
+        # Creo QImage che punta direttamente ai dati dell'array in memoria
+        q_img = QImage(array_uint8.data, larghezza, altezza, larghezza, QImage.Format_Grayscale8)
+
+        return QPixmap.fromImage(q_img)
+
+    def eventFilter(self, target_widget, event):
+        if event.type() == QEvent.Type.Wheel and target_widget in (self.ui.imgOrigView, self.ui.imgComprView):
+            if event.modifiers() == Qt.ControlModifier:
+                fattore_zoom = 1.15
+
+                # Calcoliamo il livello di zoom attuale per evitare eccessi
+                # m11 rappresenta la scala sull'asse X
+                scala_attuale = target_widget.transform().m11()
+
+                if event.angleDelta().y() > 0:
+                    # Zoom In (limite massimo a 30x)
+                    if scala_attuale < 30.0:
+                        target_widget.scale(fattore_zoom, fattore_zoom)
+                else:
+                    # Zoom Out (limite minimo allo 0.1x)
+                    if scala_attuale > 0.1:
+                        target_widget.scale(1.0 / fattore_zoom, 1.0 / fattore_zoom)
+
+                # Ritorna True per dire a Qt: "Ho gestito io la rotella, NON muovere le barre laterali!"
+                return True
+
+            # Forzo il cursore a rimanere puntatore
+            if event.type() in (QEvent.Type.MouseMove, QEvent.Type.MouseButtonRelease, QEvent.Type.Enter):
+                if target_widget.viewport().cursor().shape() != Qt.ArrowCursor:
+                    target_widget.viewport().setCursor(Qt.ArrowCursor)
+
+        return super().eventFilter(target_widget, event)
 
     def calcolaImg_click(self):
         # Scrivo label sopra le img
@@ -114,25 +164,24 @@ class MainWindow(QMainWindow):
         original_img_array = np.array(self.img_caricata)
         compressed_img_array, h_new, w_new = compress(original_img_array, self.F, self.d)
 
-        # Mostro le img nelle label (le devo convertire in QPixMap)
-        # Img originale
-        buffer_orig = BytesIO()
-        self.img_caricata.save(buffer_orig, format="BMP")
-        pixmap_orig = QPixmap()
-        pixmap_orig.loadFromData(buffer_orig.getvalue())
-        self.ui.imgOrigLabel.setStyleSheet(self.stile_riquadro)
-        self.ui.imgOrigLabel.setPixmap(pixmap_orig)
-        self.ui.imgOrigLabel.setAlignment(Qt.AlignCenter)
+        # Mostro le img nelle label (le devo riconvertirle)
+        pixmap_orig = self.numpy_to_pixmap(original_img_array)
+        pixmap_compr = self.numpy_to_pixmap(compressed_img_array)
 
-        # Img Compressa
-        compressed_img = Image.fromarray(compressed_img_array.astype(np.uint8))
-        buffer_compr = BytesIO()
-        compressed_img.save(buffer_compr, format="BMP")
-        pixmap_compr = QPixmap()
-        pixmap_compr.loadFromData(buffer_compr.getvalue())
-        self.ui.imgComprLabel.setStyleSheet(self.stile_riquadro)
-        self.ui.imgComprLabel.setPixmap(pixmap_compr)
-        self.ui.imgComprLabel.setAlignment(Qt.AlignCenter)
+        # Pulisco scena dalle vecchie img
+        self.scena_orig.clear()
+        self.scena_compr.clear()
+
+        # Aggiungiamo le nuove foto a dimensione reale
+        self.scena_orig.addPixmap(pixmap_orig)
+        self.scena_compr.addPixmap(pixmap_compr)
+
+        # Resetto le inquadrature iniziali per fare in modo che l'immagine
+        # appena caricata entri tutta nel riquadro senza zoom iniziale
+        self.ui.imgOrigView.resetTransform()
+        self.ui.imgComprView.resetTransform()
+        self.ui.imgOrigView.fitInView(self.scena_orig.itemsBoundingRect(), Qt.KeepAspectRatio)
+        self.ui.imgComprView.fitInView(self.scena_compr.itemsBoundingRect(), Qt.KeepAspectRatio)
 
         # print("Immagine compressa calcolata e stampata")
 
@@ -141,6 +190,7 @@ class MainWindow(QMainWindow):
         self.F = nuovo_F
         self.dMax = 2 * self.F - 2
         self.ui.dLabel.setText(f"Inserisci la soglia di taglio d (Max {self.dMax})")
+        self.ui.dSpinBox.setMaximum(self.dMax)
         # print("Settato nuovo F")
 
     def spinBoxD(self, nuovo_d):
