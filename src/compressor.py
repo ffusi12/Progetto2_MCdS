@@ -1,8 +1,16 @@
 import tkinter as tk
 from tkinter import filedialog, simpledialog, messagebox
-
 from PIL import Image
 import numpy as np
+from scipy.fftpack import dct, idct
+
+
+def DCT2(block):
+    return dct(dct(block.T, norm='ortho').T, norm='ortho')
+
+
+def IDCT2(block):
+    return idct(idct(block.T, norm='ortho').T, norm='ortho')
 
 
 def block_division(img_array, F):
@@ -27,6 +35,28 @@ def block_division(img_array, F):
             blocks.append(block)
 
     return  blocks
+
+
+def filter_blocks_dct(blocks, d):
+
+    filtered_blocks = []
+
+    for f in blocks:
+
+        c = DCT2(f)
+
+        F = c.shape[0]
+
+        # Delete frequencies
+        for k in range(F):
+            for l in range(F):
+
+                if k + l >= d:
+                    c[k, l] = 0
+
+        filtered_blocks.append(c)
+
+    return filtered_blocks
 
 
 # -----------------------------
@@ -62,3 +92,5 @@ d = simpledialog.askinteger(
 )
 
 blocks = block_division(img_array, F)
+
+filtered_blocks = filter_blocks_dct(blocks, d)
