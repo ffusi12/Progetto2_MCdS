@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.fftpack import dctn, idctn
 import numpy as np
-from visualizer import visualize_dct_coefficients 
+from utils.visualizer import visualize_dct_coefficients 
 
 def compute_D(N):
     """
@@ -67,23 +67,3 @@ def my_dct2(block):
     for j in range(N):
         res[:, j] = my_dct1d(res[:, j])
     return res
-
-def compress_block(block, d):
-    """Applica DCT2, taglia le frequenze e applica IDCT2 [cite: 18, 19, 20]"""
-    F = block.shape[0]
-    # Trasformata veloce della libreria [cite: 6]
-    c = dctn(block, type=2, norm='ortho')
-    
-    # Eliminazione frequenze k+l > d [cite: 20, 21]
-    for k in range(F):
-        for l in range(F):
-            if k + l > d:
-                c[k, l] = 0
-    
-    # Antitrasformata [cite: 45]
-    ff = idctn(c, type=2, norm='ortho')
-    
-    # Normalizzazione: arrotondamento e clipping [cite: 45]
-    ff = np.round(ff)
-    ff = np.clip(ff, 0, 255)
-    return ff.astype(np.uint8)
