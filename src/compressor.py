@@ -59,8 +59,29 @@ def filter_blocks_dct(blocks, d):
     return filtered_blocks
 
 
-# -----------------------------
-# Main provvisorio
+def reconstruct_image(blocks, img_shape, F):
+
+    h, w = img_shape
+
+    # Dimensioni multiple di F
+    h_new = (h // F) * F
+    w_new = (w // F) * F
+
+    reconstructed = np.zeros((h_new, w_new), dtype=np.uint8)
+
+    idx = 0
+
+    for y in range(0, h_new, F):
+        for x in range(0, w_new, F):
+
+            reconstructed[y:y+F, x:x+F] = blocks[idx]
+
+            idx += 1
+
+    return reconstructed
+
+
+# ----------- MAIN -----------
 
 root = tk.Tk()
 root.withdraw()
@@ -94,3 +115,15 @@ d = simpledialog.askinteger(
 blocks = block_division(img_array, F)
 
 filtered_blocks = filter_blocks_dct(blocks, d)
+
+reconstructed_img = reconstruct_image(
+    filtered_blocks,
+    img_array.shape,
+    F
+)
+
+img_out = Image.fromarray(reconstructed_img)
+
+img_out.show()
+
+img_out.save("compressed.bmp")
