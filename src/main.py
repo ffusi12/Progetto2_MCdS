@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, Qt, QEvent
-from PySide6.QtGui import QPixmap, QImage
+from PySide6.QtGui import QPixmap, QImage, QKeySequence, QShortcut
 
 from PIL import Image
 
@@ -62,6 +62,14 @@ class MainWindow(QMainWindow):
             self.ui.imgComprView.setDragMode(QGraphicsView.ScrollHandDrag)
             self.ui.imgOrigView.viewport().setCursor(Qt.ArrowCursor)
             self.ui.imgComprView.viewport().setCursor(Qt.ArrowCursor)
+
+            # Scorciatoia per Zoom In (Ctrl + Più)
+            self.shortcut_zoom_in = QShortcut(QKeySequence("Ctrl++"), self)
+            self.shortcut_zoom_in.activated.connect(self.zoom_in_tastiera)
+
+            # Scorciatoia per Zoom Out (Ctrl + Meno)
+            self.shortcut_zoom_out = QShortcut(QKeySequence("Ctrl+-"), self)
+            self.shortcut_zoom_out.activated.connect(self.zoom_out_tastiera)
 
             # Collego UI con Segnali e Slot
             self.ui.fileSysPushButton.clicked.connect(self.filesystem_click)
@@ -149,6 +157,19 @@ class MainWindow(QMainWindow):
                     target_widget.viewport().setCursor(Qt.ArrowCursor)
 
         return super().eventFilter(target_widget, event)
+
+    def zoom_in_tastiera(self):
+        fattore_zoom = 1.15
+        # Controlliamo la scala sulla prima vista per non esagerare con lo zoom
+        if self.ui.imgOrigView.transform().m11() < 30.0:
+                self.ui.imgOrigView.scale(fattore_zoom, fattore_zoom)
+                self.ui.imgComprView.scale(fattore_zoom, fattore_zoom)
+
+    def zoom_out_tastiera(self):
+        fattore_zoom = 1.15
+        if self.ui.imgOrigView.transform().m11() > 0.1:
+                self.ui.imgOrigView.scale(1.0 / fattore_zoom, 1.0 / fattore_zoom)
+                self.ui.imgComprView.scale(1.0 / fattore_zoom, 1.0 / fattore_zoom)
 
     def calcolaImg_click(self):
         # Scrivo label sopra le img
