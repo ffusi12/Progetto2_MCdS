@@ -1,0 +1,129 @@
+\documentclass{article}
+\usepackage[italian]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{thmtools}
+\usepackage{mdframed}
+\usepackage{amssymb}
+\usepackage{textcomp}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{xcolor} % opzionale, per evidenziazione dei colori
+\usepackage{verbatim}
+\usepackage{pmboxdraw}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{tcolorbox} % Per i box colorati
+\usepackage{dirtree}
+\usepackage{float}
+\usepackage{booktabs} % Per tabelle professionali (\toprule, \midrule, \bottomrule)
+\usepackage{multirow} % Per raggruppare le celle verticalmente
+\usepackage{array}
+\usepackage{float}
+\usepackage{longtable}
+
+\lstset{
+	numbers=left,             % numeri a sinistra
+	numberstyle=\tiny\color{gray}, % stile dei numeri
+	basicstyle=\ttfamily,     % font monospace
+	frame=single,             % cornice opzionale
+	breaklines=true,          % va a capo automaticamente
+	showstringspaces=false    % non mostra spazi come simboli
+}
+
+\title{Relazione Progetto 1 alternativo MCdS}
+\author{Andrea Coldani (894684) \and Fabio Colonetti (899689) \and Francesco Fusi (899741)}
+\date{Giugno 2026}
+
+\begin{document}
+	
+	\maketitle
+	
+	\section{Introduzione}
+	L'elaborato descrive lo sviluppo e l'analisi di un sistema software dedicato alla compressione di immagini in toni di grigio. L'obiettivo primario del progetto consiste nello studio e nell'applicazione della Trasformata Discreta del Coseno bidimensionale ($\text{DCT2}$) all'interno di un ambiente di sviluppo open-source, analizzando gli effetti di un algoritmo di compressione di tipo JPEG (operante senza matrice di quantizzazione) sul dominio frequenziale delle immagini. 
+	
+	Il lavoro si articola in due fasi principali: una prima parte di carattere prettamente computazionale, focalizzata sulla progettazione ``fatta in casa'' della trasformata e sul confronto delle sue prestazioni temporali rispetto alle routine ottimizzate di libreria basate su algoritmi \textit{Fast} ($\text{FFT}$); e una seconda parte applicativa, orientata alla scomposizione dell'immagine bitmap in macro-blocchi spaziali e al successivo taglio selettivo delle alte frequenze regolate da una soglia intera $d$. Oltre alla validazione matematica del codice tramite specifici casi test forniti, la relazione offre un commento critico sull'efficienza degli algoritmi e sul compromesso tra il livello di compressione applicato e la qualità visiva finale delle immagini ricostruite.
+	\section{Struttura della libreria}
+	\begin{figure}[H]
+		\centering % Centra il box orizzontalmente rispetto ai margini
+		\begin{tcolorbox}[
+			colback=gray!10,      % Colore dello sfondo (grigio molto chiaro)
+			colframe=gray!50,      % Colore del bordo (grigio medio)
+			width=0.65\textwidth,  % Larghezza del quadrato (regolabile)
+			arc=2pt,               % Arrotondamento degli angoli
+			boxrule=0.8pt,         % Spessore della linea del bordo
+			halign=left,           % Allineamento interno del testo
+			before skip=1cm,       % Spazio bianco sopra il box
+			after skip=1cm         % Spazio bianco sotto il box
+			]
+			\begin{verbatim}
+				PROGETTO2_MCDS/
+				├── data/
+				├── docs/
+				├── relazione/
+				├── src/
+				│   ├── gui/
+				│   ├── logic/
+				│   │   ├── compressor.py
+				│   │   └── dct.py
+				│   ├── test/
+				│   │   └── test.py
+				│   └── utils/
+				├── venv/
+				├── main.py
+				├── .gitignore
+				└── README.md
+			\end{verbatim}
+		\end{tcolorbox}
+		\caption{Struttura delle directory del progetto di compressione immagini.}
+	\end{figure}
+	\section{parte 1}
+	\subsection{Analisi delle Prestazioni della $\text{DCT2}$}
+	
+	Per comprendere le discrepanze prestazionali rilevate sperimentalmente, è necessario analizzare la logica algoritmica alla base delle due implementazioni. 
+	
+	L'algoritmo sviluppato manualmente applica la definizione classica della trasformata sfruttando la proprietà di \textit{separabilità}. La $\text{DCT2}$ viene quindi calcolata come due trasformate monodimensionali in cascata (prima per righe e poi per colonne) tramite prodotti matrice-matrice del tipo $c = T \cdot f \cdot T^T$. Ciascun prodotto richiede l'esecuzione di cicli annidati su strutture dati di dimensione $N$, portando il costo computazionale teorico a un ordine di complessità pari a $\mathcal{O}(N^3)$.
+	
+	Al contrario, la routine di libreria ottimizzata si appoggia ad algoritmi di tipo \textit{Fast} correlati alla Trasformata Rapida di Fourier ($\text{FFT}$). Invece di eseguire il prodotto matriciale diretto, la $\text{FFT}$ riduce drasticamente il numero di operazioni ridondanti. Sfruttando la simmetria e la ricorsività (secondo una logica \textit{divide et impera}), il problema di dimensione $N$ viene suddiviso in sottoproblemi più piccoli. Questo approccio abbatte la complessità computazionale del calcolo bidimensionale a:
+	\begin{equation}
+		\mathcal{O}(N^2 \log_2 N)
+	\end{equation}
+	dove $N^2$ rappresenta il numero totale di pixel dell'immagine, mentre il fattore logaritmico descrive l'efficienza della scomposizione in frequenza.
+	
+	\subsubsection{Dati Sperimentali Raccolti}
+	
+	I test di calcolo sono stati eseguiti su array quadrati di dimensione $N$ crescente. I tempi di esecuzione registrati per entrambe le versioni sono riassunti nella Tabella~\ref{tab:tempi}.
+	
+	\begin{table}[h!]
+		\centering
+		\begin{tabular}{rcc}
+			\hline
+			\textbf{N} & \textbf{Manuale} $\mathcal{O}(N^3)$ \textbf{s} & \textbf{Libreria} $\mathcal{O}(N^2 \log N)$ \textbf{s} \\ \hline
+			8          & $5.900860 \times 10^{-4}$                        & $3.745556 \times 10^{-4}$                                 \\
+			16         & $1.492023 \times 10^{-3}$                        & $7.176399 \times 10^{-5}$                                 \\
+			32         & $4.578114 \times 10^{-3}$                        & $1.065731 \times 10^{-4}$                                 \\
+			64         & $2.508330 \times 10^{-2}$                        & $1.718998 \times 10^{-4}$                                 \\
+			128        & $1.510968 \times 10^{-1}$                        & $3.721714 \times 10^{-4}$                                 \\
+			256        & $1.620643 \times 10^{0}$                         \\ \hline
+		\end{tabular}
+		\caption{Confronto dei tempi di esecuzione tra algoritmo manuale e di libreria al variare di $N$.}
+		\label{tab:tempi}
+	\end{table}
+	
+	\subsubsection{Commento dei Risultati}
+	
+	L'analisi dei dati in Tabella~\ref{tab:tempi} convalida sperimentalmente i modelli di complessità teorica precedentemente descritti.
+	
+	L'andamento del codice manuale mostra una crescita dei tempi strettamente legata al fattore $N^3$. Quando la dimensione della matrice raddoppia (passando ad esempio da $N=128$ a $N=256$), il tempo teorico dovrebbe aumentare di un fattore pari a $2^3 = 8$. Dai dati sperimentali si osserva un incremento effettivo di:
+	\begin{equation}
+		\frac{1.620643}{0.1510968} \approx 10.7
+	\end{equation}
+	Questo scostamento rispetto al fattore ideale è causato dagli overhead di gestione della memoria e dall'inefficienza dei cicli interpretati a livello applicativo su matrici di grandi dimensioni.
+	
+	L'algoritmo basato su $\text{FFT}$, invece, dimostra una scalabilità eccezionale. Al crescere di $N$, l'efficienza della libreria scava un divario incolmabile: per $N=256$, la routine ottimizzata conclude il calcolo in poco più di un millisecondo, risultando oltre **1300 volte più rapida** della controparte manuale.
+	
+	Un'eccezione interessante si nota per $N=8$, dove il tempo della libreria ($3.74 \times 10^{-4}$ s) risulta anomalo ed è superiore a quello registrato per $N=16$ ($7.17 \times 10^{-5}$ s). Questo fenomeno, ampiamente previsto in letteratura, è dovuto ai costi fissi di inizializzazione (\textit{warm-up}) della libreria scientifica, come l'allocazione delle strutture dati e il pre-calcolo dei fattori rotazionali della $\text{FFT}$. Per dimensioni estremamente ridotte, l'overhead di chiamata della funzione supera il tempo di calcolo effettivo, stabilizzandosi e mostrando il reale andamento logaritmico solo a partire da $N=16$.
+	
+	
+\end{document}
