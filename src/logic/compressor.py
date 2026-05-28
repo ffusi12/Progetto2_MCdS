@@ -1,7 +1,3 @@
-import tkinter as tk
-from tkinter import filedialog, simpledialog, messagebox
-from PIL import Image
-from matplotlib import pyplot as plt
 import numpy as np
 from scipy.fftpack import dctn, idctn
 
