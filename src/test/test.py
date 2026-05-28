@@ -1,7 +1,11 @@
 import time
+import sys
+import os
 from matplotlib import pyplot as plt
 import numpy as np
 from scipy.fftpack import dctn
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from logic.dct import my_dct1d, my_dct2
 
 
@@ -47,13 +51,18 @@ def run_benchmarks():
         my_dct2(A)
         t_manuale.append(time.time() - start)
         
-        # Tempo Libreria O(N^2 log N)
         start = time.time()
         dctn(A, type=2, norm='ortho')
         t_fast.append(time.time() - start)
 
+    # ---  TEMPI  ---
+    print("\n--- TEMPI DI ESECUZIONE (in secondi) ---\n")
+    print(f"{'N':>6} | {'Manuale (N³)':>15} | {'Libreria (N² log N)':>18}")
+    print("-" * 45)
+    for i, N in enumerate(sizes):
+        print(f"{N:>6} | {t_manuale[i]:>15.6e} | {t_fast[i]:>18.6e}")
 
-    # --- GRAFICO SEMILOGARITMICO ---
+    # --- GRAFICO  ---
     plt.figure()
     plt.semilogy(sizes, t_manuale, 'r-o', label='Manuale $N^3$')
     plt.semilogy(sizes, t_fast, 'b-s', label='Libreria $N^2 \log N$') 
@@ -62,7 +71,7 @@ def run_benchmarks():
     plt.ylabel("Tempo (secondi)")
     plt.legend()
     plt.grid(True)
-    plt.savefig("../docs/grafico_tempi.png")
+    plt.savefig("../../docs/grafico_tempi.png")
     plt.show()
 
 
