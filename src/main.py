@@ -98,20 +98,23 @@ class MainWindow(QMainWindow):
                 self.dMax = 2 * self.F - 2
                 self.FMax = min(self.larghezza, self.altezza)
 
-                # Aggiorno limiti spin box
-                self.ui.fSpinBox.setEnabled(True);
+                # Aggiorno limiti spin box e li risetto al minino
+                self.ui.fSpinBox.setEnabled(True)
                 self.ui.fSpinBox.setMaximum(self.FMax)
+                self.ui.fSpinBox.setValue(1)
 
-                self.ui.dSpinBox.setEnabled(True);
+                self.ui.dSpinBox.setEnabled(True)
                 self.ui.dSpinBox.setMaximum(self.dMax)
+                self.ui.dSpinBox.setValue(0)
 
                 # Messaggio sul bottone (log)
                 self.ui.fileSysPushButton.setStyleSheet("font-style: italic;")
-                self.ui.fileSysPushButton.setText(f"Immagine: {file_path}")
+                self.ui.fileSysPushButton.setText(f"Immagine caricata: {file_path}")
 
                 self.ui.fLabel.setText(f"Inserisci la grandezza dei blocchi F (Max {self.FMax})")
                 self.ui.dLabel.setText(f"Inserisci la soglia di taglio d (Max {self.dMax})")
-                self.ui.calcolaImgButton.setEnabled(True);
+                self.ui.calcolaImgButton.setEnabled(True)
+
 
                 # print("Nuova immagine selezionata")
 
@@ -131,25 +134,27 @@ class MainWindow(QMainWindow):
         return QPixmap.fromImage(q_img)
 
     def eventFilter(self, target_widget, event):
-        if event.type() == QEvent.Type.Wheel and target_widget in (self.ui.imgOrigView, self.ui.imgComprView):
-            if event.modifiers() == Qt.ControlModifier:
-                fattore_zoom = 1.15
+        if target_widget in (self.ui.imgOrigView, self.ui.imgComprView):
+            # Gestione zoom con CTRL + Rotella
+            if event.type() == QEvent.Type.Wheel and target_widget in (self.ui.imgOrigView, self.ui.imgComprView):
+                if event.modifiers() == Qt.ControlModifier:
+                    fattore_zoom = 1.15
 
-                # Calcoliamo il livello di zoom attuale per evitare eccessi
-                # m11 rappresenta la scala sull'asse X
-                scala_attuale = target_widget.transform().m11()
+                    # Calcoliamo il livello di zoom attuale per evitare eccessi
+                    # m11 rappresenta la scala sull'asse X
+                    scala_attuale = target_widget.transform().m11()
 
-                if event.angleDelta().y() > 0:
-                    # Zoom In (limite massimo a 30x)
-                    if scala_attuale < 30.0:
-                        target_widget.scale(fattore_zoom, fattore_zoom)
-                else:
-                    # Zoom Out (limite minimo allo 0.1x)
-                    if scala_attuale > 0.1:
-                        target_widget.scale(1.0 / fattore_zoom, 1.0 / fattore_zoom)
+                    if event.angleDelta().y() > 0:
+                        # Zoom In (limite massimo a 30x)
+                        if scala_attuale < 30.0:
+                            target_widget.scale(fattore_zoom, fattore_zoom)
+                    else:
+                        # Zoom Out (limite minimo allo 0.1x)
+                        if scala_attuale > 0.1:
+                            target_widget.scale(1.0 / fattore_zoom, 1.0 / fattore_zoom)
 
-                # Ritorna True per dire a Qt: "Ho gestito io la rotella, NON muovere le barre laterali!"
-                return True
+                    # Ritorna True per dire a Qt: "Ho gestito io la rotella, NON muovere le barre laterali!"
+                    return True
 
             # Forzo il cursore a rimanere puntatore
             if event.type() in (QEvent.Type.MouseMove, QEvent.Type.MouseButtonRelease, QEvent.Type.Enter):
@@ -172,26 +177,28 @@ class MainWindow(QMainWindow):
                 self.ui.imgComprView.scale(1.0 / fattore_zoom, 1.0 / fattore_zoom)
 
     def calcolaImg_click(self):
-        # Scrivo label sopra le img
-        self.ui.textOrigLabel.setStyleSheet("font-weight: bold;")
-        self.ui.textOrigLabel.setText("Immagine originale")
-        self.ui.textOrigLabel.setAlignment(Qt.AlignCenter)
-
-        self.ui.textComprLabel.setStyleSheet("font-weight: bold;")
-        self.ui.textComprLabel.setText(f"Immagine compressa: F = {self.F}, d = {self.d}")
-        self.ui.textComprLabel.setAlignment(Qt.AlignCenter)
-
         # Calcolo compressione
         original_img_array = np.array(self.img_caricata)
         compressed_img_array, h_new, w_new = compress(original_img_array, self.F, self.d)
+
+        # Scrivo label sopra le img
+        self.ui.textOrigLabel.setStyleSheet("font-weight: bold;")
+        self.ui.textOrigLabel.setText(f"Immagine originale ({self.altezza}x{self.larghezza})")
+        self.ui.textOrigLabel.setAlignment(Qt.AlignCenter)
+
+        self.ui.textComprLabel.setStyleSheet("font-weight: bold;")
+        self.ui.textComprLabel.setText(f"Immagine compressa ({h_new}x{w_new}) ->  F = {self.F}, d = {self.d}")
+        self.ui.textComprLabel.setAlignment(Qt.AlignCenter)
 
         # Mostro le img nelle label (le devo riconvertirle)
         pixmap_orig = self.numpy_to_pixmap(original_img_array)
         pixmap_compr = self.numpy_to_pixmap(compressed_img_array)
 
-        # Pulisco scena dalle vecchie img
+        # Pulisco e resetto scena dalle vecchie img
         self.scena_orig.clear()
         self.scena_compr.clear()
+        self.scena_orig.setSceneRect(pixmap_orig.rect())
+        self.scena_compr.setSceneRect(pixmap_compr.rect())
 
         # Aggiungiamo le nuove foto a dimensione reale
         self.scena_orig.addPixmap(pixmap_orig)
@@ -201,8 +208,16 @@ class MainWindow(QMainWindow):
         # appena caricata entri tutta nel riquadro senza zoom iniziale
         self.ui.imgOrigView.resetTransform()
         self.ui.imgComprView.resetTransform()
-        self.ui.imgOrigView.fitInView(self.scena_orig.itemsBoundingRect(), Qt.KeepAspectRatio)
-        self.ui.imgComprView.fitInView(self.scena_compr.itemsBoundingRect(), Qt.KeepAspectRatio)
+
+        # Adatto la visione solo se l'immagine è più grande dello schermo, altrimenti
+        # la mostro a dimensioni reali
+        view_w = self.ui.imgOrigView.viewport().width()
+        view_h = self.ui.imgOrigView.viewport().height()
+        rect_img = self.scena_orig.itemsBoundingRect()
+
+        if rect_img.width() > view_w or rect_img.height() > view_h:
+            self.ui.imgOrigView.fitInView(rect_img, Qt.KeepAspectRatio)
+            self.ui.imgComprView.fitInView(self.scena_compr.itemsBoundingRect(), Qt.KeepAspectRatio)
 
         # print("Immagine compressa calcolata e stampata")
 
