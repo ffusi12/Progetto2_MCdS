@@ -71,7 +71,7 @@ def run_benchmarks():
     plt.ylabel("Tempo (secondi)")
     plt.legend()
     plt.grid(True)
-    plt.savefig("../../docs/grafico_tempi.png")
+    plt.savefig("../../relazione/immagini/grafico_tempi.png")
     plt.show()
 
 

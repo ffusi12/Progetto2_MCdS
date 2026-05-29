@@ -32,7 +32,7 @@
 	showstringspaces=false    % non mostra spazi come simboli
 }
 
-\title{Relazione Progetto 1 alternativo MCdS}
+\title{Relazione Progetto 2 MCdS}
 \author{Andrea Coldani (894684) \and Fabio Colonetti (899689) \and Francesco Fusi (899741)}
 \date{Giugno 2026}
 
@@ -45,39 +45,57 @@
 	
 	Il lavoro si articola in due fasi principali: una prima parte di carattere prettamente computazionale, focalizzata sulla progettazione ``fatta in casa'' della trasformata e sul confronto delle sue prestazioni temporali rispetto alle routine ottimizzate di libreria basate su algoritmi \textit{Fast} ($\text{FFT}$); e una seconda parte applicativa, orientata alla scomposizione dell'immagine bitmap in macro-blocchi spaziali e al successivo taglio selettivo delle alte frequenze regolate da una soglia intera $d$. Oltre alla validazione matematica del codice tramite specifici casi test forniti, la relazione offre un commento critico sull'efficienza degli algoritmi e sul compromesso tra il livello di compressione applicato e la qualità visiva finale delle immagini ricostruite.
 	\section{Struttura della libreria}
-	\begin{figure}[H]
-		\centering % Centra il box orizzontalmente rispetto ai margini
-		\begin{tcolorbox}[
-			colback=gray!10,      % Colore dello sfondo (grigio molto chiaro)
-			colframe=gray!50,      % Colore del bordo (grigio medio)
-			width=0.65\textwidth,  % Larghezza del quadrato (regolabile)
-			arc=2pt,               % Arrotondamento degli angoli
-			boxrule=0.8pt,         % Spessore della linea del bordo
-			halign=left,           % Allineamento interno del testo
-			before skip=1cm,       % Spazio bianco sopra il box
-			after skip=1cm         % Spazio bianco sotto il box
-			]
-			\begin{verbatim}
-				PROGETTO2_MCDS/
-				├── data/
-				├── docs/
-				├── relazione/
-				├── src/
-				│   ├── gui/
-				│   ├── logic/
-				│   │   ├── compressor.py
-				│   │   └── dct.py
-				│   ├── test/
-				│   │   └── test.py
-				│   └── utils/
-				├── venv/
-				├── main.py
-				├── .gitignore
-				└── README.md
-			\end{verbatim}
-		\end{tcolorbox}
-		\caption{Struttura delle directory del progetto di compressione immagini.}
-	\end{figure}
+	Il software è stato sviluppato in linguaggio Python e strutturato in modo modulare per garantire separazione tra la logica di calcolo matematico, l'interfaccia utente, i test di validazione. Di seguito viene descritto il ruolo di ciascuna cartella e file presenti nella radice del progetto:
+	
+		\begin{figure}[htbp]
+			\centering % Centra il box rispetto alla pagina
+			\begin{tcolorbox}[
+				colback=gray!10,       % Colore dello sfondo
+				colframe=gray!50,      % Colore del bordo
+				width=0.65\textwidth,  % Larghezza del box
+				arc=2pt,               % Arrotondamento degli angoli
+				boxrule=0.8pt,         % Spessore del bordo
+				halign=left,           % Allineamento del testo interno
+				before skip=0.5cm,     % Spazio sopra il box
+				after skip=0.5cm       % Spazio sotto il box
+				]
+				\begin{verbatim}
+					PROGETTO2_MCDS/
+					├── data/
+					├── src/
+					│   ├── gui/
+					│   ├── logic/
+					│   │   ├── compressor.py
+					│   │   └── dct.py
+					│   └── test/
+					│       └── test.py
+					├── venv/
+					├── main.py
+					├── .gitignore
+					└── README.md
+				\end{verbatim}
+			\end{tcolorbox}
+			\caption{Struttura delle directory del progetto di compressione immagini.}
+		\end{figure}
+
+	\begin{itemize}
+		\item \textbf{\texttt{data/}}: Cartella contenente le immagini in formato bitmap (\texttt{.bmp}) in toni di grigio, utilizzate come input per la compressione e per le elaborazioni del software.
+		
+		\item \textbf{\texttt{src/}} (Source): Contiene l'intero codice sorgente dell'applicazione, suddiviso nei seguenti sotto-moduli specializzati:
+		\begin{itemize}
+			\item \textbf{\texttt{gui/}}: Gestisce l'interfaccia grafica minimale che consente all'utente di navigare nel filesystem per selezionare l'immagine e inserire i parametri numerici di input ($F$ e $d$).
+			\item \textbf{\texttt{logic/}}: Rappresenta il nucleo computazionale dell'algoritmo:
+			\begin{itemize}
+				\item \texttt{dct.py}: Contiene l'implementazione sequenziale della DCT/DCT2 definita ``fatta in casa'' ($O(N^3)$) e le funzioni di interfaccia con la libreria scientifica per la versione ``fast'' ($O(N^2 \log N)$), necessarie al confronto dei tempi di esecuzione.
+				\item \texttt{compressor.py}: Implementa l'algoritmo di compressione JPEG-like, occupandosi della segmentazione dell'immagine in macro-blocchi $F \times F$, del filtraggio delle frequenze oltre la diagonale $d$.
+			\end{itemize}
+			\item \textbf{\texttt{test/test.py}}: Script di Landmark-Testing utilizzato per verificare la correttezza numerica e lo scaling delle funzioni implementate, confrontando i risultati della DCT monodimensionale e bidimensionale con la matrice di test $8 \times 8$ fornita nelle specifiche.
+		\end{itemize}
+		
+		\item \textbf{\texttt{main.py}}: Il punto di ingresso (\textit{entry-point}) principale dell'applicazione che inizializza l'interfaccia utente e coordina il flusso dei dati tra i vari moduli.
+		
+		\item \textbf{\texttt{venv/}}, \textbf{\texttt{.gitignore}}, \textbf{\texttt{README.md}}: File e directory di configurazione per la gestione dell'ambiente virtuale isolato, l'esclusione di file ridondanti dal controllo di versione e la stesura delle istruzioni rapide per l'installazione e l'esecuzione del programma.
+	\end{itemize}
 	\section{parte 1}
 	\subsection{Analisi delle Prestazioni della $\text{DCT2}$}
 	
@@ -85,7 +103,7 @@
 	
 	L'algoritmo sviluppato manualmente applica la definizione classica della trasformata sfruttando la proprietà di \textit{separabilità}. La $\text{DCT2}$ viene quindi calcolata come due trasformate monodimensionali in cascata (prima per righe e poi per colonne) tramite prodotti matrice-matrice del tipo $c = T \cdot f \cdot T^T$. Ciascun prodotto richiede l'esecuzione di cicli annidati su strutture dati di dimensione $N$, portando il costo computazionale teorico a un ordine di complessità pari a $\mathcal{O}(N^3)$.
 	
-	Al contrario, la routine di libreria ottimizzata si appoggia ad algoritmi di tipo \textit{Fast} correlati alla Trasformata Rapida di Fourier ($\text{FFT}$). Invece di eseguire il prodotto matriciale diretto, la $\text{FFT}$ riduce drasticamente il numero di operazioni ridondanti. Sfruttando la simmetria e la ricorsività (secondo una logica \textit{divide et impera}), il problema di dimensione $N$ viene suddiviso in sottoproblemi più piccoli. Questo approccio abbatte la complessità computazionale del calcolo bidimensionale a:
+	Al contrario, la routine di libreria ottimizzata si appoggia ad algoritmi di tipo \textit{Fast} correlati alla Trasformata Rapida di Fourier ($\text{FFT}$). Invece di eseguire il prodotto matriciale diretto, la $\text{FFT}$ riduce drasticamente il numero di operazioni ridondanti. Sfruttando la simmetria e  la ricorsività (secondo una logica \textit{divide et impera}), il problema di dimensione $N$ viene suddiviso in sottoproblemi più piccoli. Questo approccio abbatte la complessità computazionale del calcolo bidimensionale a:
 	\begin{equation}
 		\mathcal{O}(N^2 \log_2 N)
 	\end{equation}
@@ -99,31 +117,63 @@
 		\centering
 		\begin{tabular}{rcc}
 			\hline
-			\textbf{N} & \textbf{Manuale} $\mathcal{O}(N^3)$ \textbf{s} & \textbf{Libreria} $\mathcal{O}(N^2 \log N)$ \textbf{s} \\ \hline
-			8          & $5.900860 \times 10^{-4}$                        & $3.745556 \times 10^{-4}$                                 \\
-			16         & $1.492023 \times 10^{-3}$                        & $7.176399 \times 10^{-5}$                                 \\
-			32         & $4.578114 \times 10^{-3}$                        & $1.065731 \times 10^{-4}$                                 \\
-			64         & $2.508330 \times 10^{-2}$                        & $1.718998 \times 10^{-4}$                                 \\
-			128        & $1.510968 \times 10^{-1}$                        & $3.721714 \times 10^{-4}$                                 \\
-			256        & $1.620643 \times 10^{0}$                         \\ \hline
+			\textbf{N} & \textbf{Manuale} $\mathcal{O}(N^3)$ \textbf{[s]} & \textbf{Libreria} $\mathcal{O}(N^2 \log N)$ \textbf{[s]} \\ \hline
+			8          & $6.592274 \times 10^{-4}$                        & $1.833677 \times 10^{-3}$                               \\
+			16         & $2.862453 \times 10^{-3}$                        & $1.497269 \times 10^{-4}$                               \\
+			32         & $7.899284 \times 10^{-3}$                        & $1.859665 \times 10^{-4}$                               \\
+			64         & $3.401685 \times 10^{-2}$                        & $2.512932 \times 10^{-4}$                               \\
+			128        & $1.806502 \times 10^{-1}$                        & $3.659725 \times 10^{-4}$                               \\
+			256        & $1.715369 \times 10^{0}$                         & $1.292467 \times 10^{-3}$                               \\ \hline
 		\end{tabular}
 		\caption{Confronto dei tempi di esecuzione tra algoritmo manuale e di libreria al variare di $N$.}
 		\label{tab:tempi}
 	\end{table}
 	
+	\begin{figure}[h!]
+		\centering
+		\includegraphics[width=0.85\textwidth]{immagini/grafico_tempi.png}
+		\caption{Andamento dei tempi di esecuzione in scala semilogaritmica al variare della dimensione $N$.}
+		\label{fig:grafico_tempi}
+	\end{figure}
+	
 	\subsubsection{Commento dei Risultati}
 	
-	L'analisi dei dati in Tabella~\ref{tab:tempi} convalida sperimentalmente i modelli di complessità teorica precedentemente descritti.
+	L'analisi dei dati in Tabella~\ref{tab:tempi} e del relativo andamento in Figura~\ref{fig:grafico_tempi} convalida sperimentalmente i modelli di complessità teorica precedentemente descritti.
 	
 	L'andamento del codice manuale mostra una crescita dei tempi strettamente legata al fattore $N^3$. Quando la dimensione della matrice raddoppia (passando ad esempio da $N=128$ a $N=256$), il tempo teorico dovrebbe aumentare di un fattore pari a $2^3 = 8$. Dai dati sperimentali si osserva un incremento effettivo di:
 	\begin{equation}
-		\frac{1.620643}{0.1510968} \approx 10.7
+		\frac{1.715369}{0.1806502} \approx 9.5
 	\end{equation}
-	Questo scostamento rispetto al fattore ideale è causato dagli overhead di gestione della memoria e dall'inefficienza dei cicli interpretati a livello applicativo su matrici di grandi dimensioni.
+	Questo scostamento rispetto al fattore ideale è causato dagli overhead di gestione della memoria e dalle inefficienze intrinseche nell'accesso sequenziale agli elementi di matrici di grandi dimensioni (ad esempio per via dei \textit{cache miss}).
 	
-	L'algoritmo basato su $\text{FFT}$, invece, dimostra una scalabilità eccezionale. Al crescere di $N$, l'efficienza della libreria scava un divario incolmabile: per $N=256$, la routine ottimizzata conclude il calcolo in poco più di un millisecondo, risultando oltre **1300 volte più rapida** della controparte manuale.
+	L'algoritmo basato su libreria ottimizzata, invece, dimostra una scalabilità eccezionale. Al crescere di $N$, l'efficienza della libreria scava un divario incolmabile: per $N=256$, la routine ottimizzata conclude il calcolo in circa $1.29$ millisecondi, risultando oltre **1320 volte più rapida** della controparte manuale ($1.715$ secondi).
 	
-	Un'eccezione interessante si nota per $N=8$, dove il tempo della libreria ($3.74 \times 10^{-4}$ s) risulta anomalo ed è superiore a quello registrato per $N=16$ ($7.17 \times 10^{-5}$ s). Questo fenomeno, ampiamente previsto in letteratura, è dovuto ai costi fissi di inizializzazione (\textit{warm-up}) della libreria scientifica, come l'allocazione delle strutture dati e il pre-calcolo dei fattori rotazionali della $\text{FFT}$. Per dimensioni estremamente ridotte, l'overhead di chiamata della funzione supera il tempo di calcolo effettivo, stabilizzandosi e mostrando il reale andamento logaritmico solo a partire da $N=16$.
+	Un'eccezione interessante si nota per $N=8$, dove il tempo della libreria ($1.833677 \times 10^{-3}$ s) risulta marcatamente anomalo ed è superiore perfino a quello registrato per le dimensioni successive fino a $N=128$. Questo fenomeno è dovuto ai costi fissi di inizializzazione (\textit{warm-up}) della libreria scientifica, come l'allocazione dinamica delle strutture, la pianificazione dell'algoritmo ottimale e il pre-calcolo dei fattori rotazionali. Per dimensioni estremamente ridotte ($N=8$), l'overhead di chiamata della funzione supera di gran lunga il tempo di calcolo effettivo, per poi stabilizzarsi e mostrare il reale andamento asintotico solo a partire da $N=16$.
+	
+	\section{parte 2}
+	
+	Dopo aver integrato la versione ottimizzata della trasformata (\textit{Fast DCT2}) nel modulo di compressione, il software è stato testato sul dataset di immagini \texttt{.bmp} in toni di grigio fornite. L'interfaccia grafica sviluppata consente di variare in tempo reale l'ampiezza del blocco $F$ e la soglia di taglio $d$, mostrando l'immagine originale affiancata a quella compressa al fine di valutarne gli artefatti visivi. Dall'analisi comparativa dei risultati emergono differenze nette nel comportamento dell'algoritmo a seconda della natura geometrica del pattern processato.
+	
+	\subsubsection{Immagini Artificiali a Scacchiera e Gradienti}
+	La compressione mostra gli effetti più distruttivi e innaturali sulle immagini geometriche artificiali (quali \texttt{20x20.bmp}, \texttt{40x40.bmp}, fino a \texttt{640x640.bmp}). 
+	\begin{itemize}
+		\item \textbf{Perché l'algoritmo fa estrema fatica:} Dal punto di vista dell'analisi di Fourier, una transizione netta e istantanea dal nero totale ($0$) al bianco totale ($255$) --- come il bordo di un quadrato della scacchiera --- rappresenta una discontinuità a gradino (un segnale ad alta frequenza). Per ricostruire matematicamente questo sbalzo netto attraverso una combinazione di funzioni coseno, la DCT2 necessita di \textit{tutti} i suoi coefficienti, specialmente di quelli ad altissima frequenza posizionati nell'angolo inferiore destro della matrice. 
+		\item \textbf{Artefatti visivi riscontrati:} Non appena si imposta una soglia $d < 2F-2$ (eliminando le alte frequenze), i bordi netti dei quadrati si sfocano e compare il cosiddetto \textit{fenomeno di Gibbs} o \textit{ringing artifact}, ovvero vistose ondulazioni e aloni grigiastri attorno ai confini originariamente netti. Se il blocco $F$ non è perfettamente allineato con la periodicità della scacchiera, l'insorgenza dell'``effetto blocco'' (\textit{blocking artifact}) altera completamente la geometria dell'immagine.
+		\item \textbf{Il caso del gradiente:} Nell'immagine \texttt{gradient.bmp}, al contrario, la transizione è morbida e graduale. Trattandosi di variazioni a bassissima frequenza, l'algoritmo riesce a preservare un'ottima fedeltà visiva anche con valori di $d$ molto bassi, poiché l'informazione strutturale è quasi interamente concentrata nei primissimi coefficienti in alto a sinistra della matrice (componente DC e prime armoniche).
+	\end{itemize}
+	
+	\subsubsection{Immagini Naturali e Fotografiche}
+	Il comportamento cambia radicalmente quando l'algoritmo elabora immagini reali come \texttt{bridge.bmp}, \texttt{cathedral.bmp} e \texttt{deer.bmp}.
+	\begin{itemize}
+		\item \textbf{Perché l'algoritmo lavora meglio:} Le immagini fotografiche sono caratterizzate da un'alta \textit{correlazione spaziale}; i pixel vicini tendono ad avere valori di luminosità molto simili e i dettagli finissimi (alte frequenze) spesso si confondono con il rumore di fondo o con texture naturali (\textit{e.g.}, la pietra della cattedrale, il pelo del cervo o il cielo notturno del ponte). Di conseguenza, la stragrande maggioranza dell'energia informativa è concentrata nelle basse frequenze.
+		\item \textbf{Analisi specifica del dataset:} 
+		\begin{itemize}
+			\item \texttt{gradient.bmp} e \texttt{deer.bmp}: In queste immagini sono presenti ampie zone a variazione sfumata o sfondo scuro uniforme. L'occhio umano fa molta fatica a percepire il taglio delle frequenze oltre la diagonale $d$ in queste aree, rendendo la compressione estremamente efficiente e l'immagine ricostruita apparentemente identica all'originale.
+			\item \texttt{bridge.bmp} e \texttt{cathedral.bmp}: Sono i due casi in cui la differenza visiva diventa più evidente al calare di $d$. La struttura metallica del ponte e le intricate decorazioni barocche dell'interno della cattedrale contengono moltissime linee sottili e contrasti geometrici. Quando si riduce la soglia $d$, l'algoritmo ``fa fatica'' a mantenere la nitidezza di queste strutture: i dettagli minuti dell'architettura si fondono in una sfocatura omogenea e le impalcature del ponte perdono definizione, evidenziando la scomposizione in tasselli quadrati di dimensione $F$.
+		\end{itemize}
+	\end{itemize}
+	
+	In conclusione, l'esperimento evidenzia il principio cardine della compressione \textit{lossy} JPEG: l'algoritmo sfrutta i limiti della percezione visiva umana, la quale è fortemente insensibile alla perdita dei dettagli ad alta frequenza nelle immagini naturali, ma tollera molto male gli stessi tagli quando applicati a grafiche artificiali o a contorni ad alto contrasto.
 	
 	
 \end{document}
