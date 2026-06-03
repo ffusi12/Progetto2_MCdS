@@ -28,7 +28,7 @@ def run_benchmarks():
     print("\n\t\t--- MATRICE DCT2 RISULTANTE (Attesa come da Tabella PDF) ---\n")    
 
     for riga in risultato_mio:
-        stringa_riga = " ".join(f"{valore:10.2e}" for valore in riga)
+        stringa_riga = " ".join(f"{valore:10.4e}" for valore in riga)
         print(stringa_riga)
 
     # Test DCT1 monodimensionale
@@ -37,7 +37,7 @@ def run_benchmarks():
     print("\nVerifica Scaling DCT1...")
     risultato_mio_dct1 = my_dct1d(test_block_dct1)
     print("\n\t\t--- VETTORE DCT1 RISULTANTE (Attesa come da Tabella PDF) ---\n")
-    stringa_riga = " ".join(f"{valore:10.2e}" for valore in risultato_mio_dct1)
+    stringa_riga = " ".join(f"{valore:10.4e}" for valore in risultato_mio_dct1)
     print(stringa_riga)
 
     # --- BENCHMARK TEMPI (CON MEDIA SU 100 ESECUZIONI) ---

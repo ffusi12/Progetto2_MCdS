@@ -16,7 +16,6 @@ def my_dct1d(f_vect):
     
     N = len(f_vect)
     D = compute_D(N)
-    #D = np.round(D, decimals=2)
     c_vect = D @ f_vect
 
     return c_vect
