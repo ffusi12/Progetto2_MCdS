@@ -10,12 +10,13 @@ def compute_D(N):
     
     D = alpha_vect.reshape(N, 1) * np.cos(k * np.pi * (2 * i + 1) / (2 * N))
     
-    return D
+    return D 
 
 def my_dct1d(f_vect):
     
     N = len(f_vect)
     D = compute_D(N)
+    #D = np.round(D, decimals=2)
     c_vect = D @ f_vect
 
     return c_vect

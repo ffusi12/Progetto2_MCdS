@@ -181,6 +181,37 @@ class MainWindow(QMainWindow):
         original_img_array = np.array(self.img_caricata)
         compressed_img_array, h_new, w_new = compress(original_img_array, self.F, self.d)
 
+        # --- CALCOLO DELL'MSE ---
+        if original_img_array.shape == compressed_img_array.shape:
+            # Se hanno la stessa forma, calcolo diretto
+            mse = np.mean((original_img_array.astype(np.float64) - compressed_img_array.astype(np.float64)) ** 2)
+        else:
+            # Se le dimensioni cambiano, usiamo PIL (Pillow) per ridimensionare l'originale
+            # Convertiamo l'array originale in un'immagine PIL temporanea per fare il resize
+            from PIL import Image
+            img_temp = Image.fromarray(original_img_array)
+            # PIL vuole le dimensioni come (larghezza, altezza) -> (w_new, h_new)
+            img_temp_resized = img_temp.resize((w_new, h_new), Image.Resampling.LANCZOS)
+            
+            # Riconvertiamo in array per fare il calcolo matematico
+            img_orig_rescaled = np.array(img_temp_resized)
+            
+            mse = np.mean((img_orig_rescaled.astype(np.float64) - compressed_img_array.astype(np.float64)) ** 2)
+        
+        # Calcolo opzionale del PSNR
+        if mse > 0:
+            psnr = 10 * np.log10((255 ** 2) / mse)
+            testo_metrice = f"MSE: {np.sqrt(mse):.2f} | PSNR: {psnr:.2f} dB"
+        else:
+            testo_metrice = "MSE: 0.00 | PSNR: Infinito (Immagini identiche)"
+        # ------------------------
+        # --- STAMPA DI SICUREZZA NELLA CONSOLE (La vedi nel terminale da cui lanci il programma) ---
+        print("\n" + "="*40)
+        print(f"RISULTATI COMPRENSIONE PER FRANCESCO:")
+        print(f"-> {testo_metrice}")
+        print("="*40 + "\n")
+        # -------------------
+
         # Scrivo label sopra le img
         self.ui.textOrigLabel.setStyleSheet("font-weight: bold;")
         self.ui.textOrigLabel.setText(f"Immagine originale ({self.altezza}x{self.larghezza})")
