@@ -185,6 +185,7 @@ class MainWindow(QMainWindow):
         if original_img_array.shape == compressed_img_array.shape:
             # Se hanno la stessa forma, calcolo diretto
             mse = np.mean((original_img_array.astype(np.float64) - compressed_img_array.astype(np.float64)) ** 2)
+            rmse = np.sqrt(rmse)
         else:
             # Se le dimensioni cambiano, usiamo PIL (Pillow) per ridimensionare l'originale
             # Convertiamo l'array originale in un'immagine PIL temporanea per fare il resize
@@ -197,20 +198,12 @@ class MainWindow(QMainWindow):
             img_orig_rescaled = np.array(img_temp_resized)
             
             mse = np.mean((img_orig_rescaled.astype(np.float64) - compressed_img_array.astype(np.float64)) ** 2)
-        
-        # Calcolo opzionale del PSNR
-        if mse > 0:
-            psnr = 10 * np.log10((255 ** 2) / mse)
-            testo_metrice = f"MSE: {np.sqrt(mse):.2f} | PSNR: {psnr:.2f} dB"
-        else:
-            testo_metrice = "MSE: 0.00 | PSNR: Infinito (Immagini identiche)"
-        # ------------------------
-        # --- STAMPA DI SICUREZZA NELLA CONSOLE (La vedi nel terminale da cui lanci il programma) ---
+            rmse = np.sqrt(rmse)
+
         print("\n" + "="*40)
-        print(f"RISULTATI COMPRENSIONE PER FRANCESCO:")
-        print(f"-> {testo_metrice}")
+        print(f"RISULTATI COMPRESSIONE")
+        print(f"-> RMSE: {rmse:.2f}")
         print("="*40 + "\n")
-        # -------------------
 
         # Scrivo label sopra le img
         self.ui.textOrigLabel.setStyleSheet("font-weight: bold;")
