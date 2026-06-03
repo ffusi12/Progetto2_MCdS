@@ -194,7 +194,10 @@
 			\item \textit{Sfocatura:} la rimozione quasi totale delle alte frequenze cancella il gradino bianco nero, rendendo sfocato il passaggio dal bianco al nero.
 		\end{enumerate}
 	\end{itemize}
-	
+
+    \noindent
+      Un’osservazione interessante è che, impostando \texttt{d = 1}, l’immagine risulta suddivisa in blocchi ciascuno dei quali appare come una regione a tonalità di \textbf{grigio uniforme}. Questo avviene perché la maggior parte dei coefficienti ad alta frequenza viene annullata dalla quantizzazione, lasciando soltanto la componente a bassa frequenza che corrisponde al valore medio del blocco.
+    
 	\subsubsection{Confronto tra Immagine Naturale e Scacchiera (Fissati $F$ e $d$)}
 	Mantenendo fissi i parametri $F=8$ (dimensione di blocco) e $d=5$ (soglia di taglio), l'algoritmo viene applicato a due immagini in input con caratteristiche spettrali opposte: un'immagine fotografica naturale cattedral.bmp e un'immagine sintetica geometrica a scacchiera 80x80.bmp. Da un'analisi qualitativa emerge che:
 	\begin{itemize}
@@ -252,5 +255,10 @@
 			\item \textbf{caso per $F=24$ ($\text{MSE} = 164.92$):} Poiché la dimensione originale dell'immagine ($160$) non è divisibile per $24$, l'operazione di taglio rimuove gli ultimi $16$ pixel della matrice ($160 - 24 \times 6 = 16$). Questo troncamento asimmetrico spezza a metà l'ultima fila di scacchi geometrici. La sottomatrice così tagliata introduce nello spettro DCT una forte componente a gradino artificiale che, privata del $75\%$ delle alte frequenze a causa della soglia $d=17$, genera una distorsione locale che distrugge la linearità dei bordi e fa aumentare il MSE dell'intera figura.
 			\item \textbf{caso per $F=8, 16, 32$ ($\text{MSE} \approx 32$):} Al contrario delle immagini naturali, l'errore non cresce all'aumentare del blocco se questo rimane un sottomultiplo esatto del piano immagine ($160 / 32 = 5$ blocchi perfetti). Quando $F$ si allinea con la griglia geometrica, ogni sottomatrice cattura una porzione perfettamente simmetrica e speculare dei quadrati bianchi e neri. Lo scostamento spettrale dovuto al taglio frequenziale si distribuisce così in modo identico e bilanciato su tutti i blocchi, mantenendo l'errore costante e visivamente confinato alle sole linee di transizione netta dei bordi.
 		\end{itemize}
-	
+
+\section{How to Run}
+L'esecuzione é semplice in quanto é sufficiente, dalla root del progetto eseguire i seguenti comandi da terminale: "\texttt{cd src}" e poi "\texttt{python main.py}".
+\newline \newline
+Dopodiché é anche possibile eseguire il test fornito come benchmark e sempre dalla root bisogna eseguire: "\texttt{cd src}", "\texttt{cd test}" e poi "\texttt{python test.py}"
+
 \end{document}
