@@ -1,10 +1,12 @@
-# Progetto 2
+# Progetto 2 MdCS
 Il seguente progetto è diviso in due parti principali, la prima è lo sviluppo di 
 una DCT "fatta in casa" confrontandola con la FFT della libreria **Scipy**. 
 La seconda parte comprende lo sviluppo di un'interfaccia che implementa un 
 algoritmo di compressione direttamente sulle immagini (.bmp).  
 Il progetto è interamente fatto in Python (3.11.4) e l'interfaccia 
-è sviluppata in Qt per Python (con PySide 6)
+è sviluppata in Qt per Python (con PySide 6). Nell'interfaccia è possibile 
+scegliere i parametri della compressione F e d e applicarli ad un'immagine.
+![Immagine interfaccia](/relazione/immagini/interfaccia.png)
 
 ## How to run
 Innanzitutto è necessario scaricare le librerie esterne:

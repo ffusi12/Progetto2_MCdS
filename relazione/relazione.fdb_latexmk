@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1780567589.01028 "d:/Hack/Progetto2_MCdS/relazione/relazione.tex" "relazione.pdf" "relazione" 1780567591.66344 0
+["pdflatex"] 1780571399.64526 "d:/Hack/Progetto2_MCdS/relazione/relazione.tex" "relazione.pdf" "relazione" 1780571401.91566 0
   "C:/Users/Fabio/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1780502875 82507 a9eef8696c92627b87e9975edea03b2a ""
   "C:/Users/Fabio/AppData/Local/MiKTeX/fonts/pk/ljfour/jknappen/ec/dpi600/ecbx1000.pk" 1779368804 25420 2e2a3de462b673e94e45164d47e194de ""
   "C:/Users/Fabio/AppData/Local/MiKTeX/fonts/pk/ljfour/jknappen/ec/dpi600/ecbx1200.pk" 1779368802 31952 4e668fc393e54e1fc2bb9c2e86c65b6d ""
@@ -199,15 +199,15 @@
   "C:/Users/Fabio/AppData/Local/Programs/MiKTeX/tex/latex/xcolor/xcolor.sty" 1700127522 55487 80a65caedd3722f4c20a14a69e785d8f ""
   "C:/Users/Fabio/AppData/Local/Programs/MiKTeX/tex/latex/zref/zref-abspage.sty" 1750428951 2269 2de6c7a5fd634dfef00a960544463a38 ""
   "C:/Users/Fabio/AppData/Local/Programs/MiKTeX/tex/latex/zref/zref-base.sty" 1750428951 20785 198a9cb2e04238d92c320d0d9edbd76a ""
-  "d:/Hack/Progetto2_MCdS/relazione/relazione.tex" 1780567588 18191 40a39e413ba5f55449c825b9b8c4e7ef ""
+  "d:/Hack/Progetto2_MCdS/relazione/relazione.tex" 1780571400 18520 1e1bbb64cc9a4f9e9a0c8817f4c52a75 ""
   "immagini/80x80.png" 1780561617 162332 5a16c5b5020420be41484b1cc79afbdb ""
   "immagini/Confronto_quadrati.png" 1780560195 382283 82d3bb1b8d40f3c409a680fc24bf45df ""
   "immagini/cervo.png" 1780567499 384367 213abab422b379d9d15579c0ff63c58c ""
   "immagini/grafico_tempi.png" 1780492793 54066 b32b5380eee5eec6faea0b27c1eabe5e ""
   "immagini/ponte.png" 1780567518 785343 23a6b30a3f0099f0fa8fa69ef7ba6792 ""
-  "relazione.aux" 1780567591 3537 715395ffc39ba588c2c3abea7b1c38ba "pdflatex"
-  "relazione.out" 1780567591 1872 83b7c839e0785e89e15520351f1f509b "pdflatex"
-  "relazione.tex" 1780567588 18191 40a39e413ba5f55449c825b9b8c4e7ef ""
+  "relazione.aux" 1780571401 3541 455cf028efac04832a3ea0754f9feda7 "pdflatex"
+  "relazione.out" 1780571401 1872 83b7c839e0785e89e15520351f1f509b "pdflatex"
+  "relazione.tex" 1780571400 18520 1e1bbb64cc9a4f9e9a0c8817f4c52a75 ""
   (generated)
   "relazione.aux"
   "relazione.log"
