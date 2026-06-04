@@ -185,7 +185,7 @@ class MainWindow(QMainWindow):
         if original_img_array.shape == compressed_img_array.shape:
             # Se hanno la stessa forma, calcolo diretto
             mse = np.mean((original_img_array.astype(np.float64) - compressed_img_array.astype(np.float64)) ** 2)
-            rmse = np.sqrt(rmse)
+            rmse = np.sqrt(mse)
         else:
             # Se le dimensioni cambiano, usiamo PIL (Pillow) per ridimensionare l'originale
             # Convertiamo l'array originale in un'immagine PIL temporanea per fare il resize
@@ -198,7 +198,7 @@ class MainWindow(QMainWindow):
             img_orig_rescaled = np.array(img_temp_resized)
             
             mse = np.mean((img_orig_rescaled.astype(np.float64) - compressed_img_array.astype(np.float64)) ** 2)
-            rmse = np.sqrt(rmse)
+            rmse = np.sqrt(mse)
 
         print("\n" + "="*40)
         print(f"RISULTATI COMPRESSIONE")

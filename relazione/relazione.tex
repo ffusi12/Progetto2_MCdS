@@ -38,227 +38,262 @@
 
 \begin{document}
 	
-	\maketitle
-	
-	\section{Introduzione}
-	L'elaborato descrive l'analisi e lo sviluppo di un sistema software per la compressione di immagini in toni di grigio. Gli obiettivi del progetto si articolano in due fasi principali:
-	\begin{itemize}
-		\item \textbf{Analisi prestazionale}: dedicata all'implementazione in Python dell'algoritmo DCT2 e confronto approfondito con la routine FFT della libreria \texttt{scipy}.
-		\item \textbf{Compressione JPEG}: sviluppo di un sistema di compressione d'immagine in scala di grigio basato sullo standard JPEG (senza l'ausilio della matrice di quantizzazione).
-	\end{itemize}
-	
-	\section{Struttura della libreria}
-	Il software è stato sviluppato con il linguaggio Python e strutturato in modo modulare per garantire separazione tra la logica di calcolo matematico, l'interfaccia utente, i test di validazione. Di seguito viene descritto il ruolo di ciascuna cartella e file presenti nella radice del progetto:
-	
-		\begin{figure}[H]
-			\centering % Centra il box rispetto alla pagina
-			\begin{tcolorbox}[
-				colback=gray!10,       % Colore dello sfondo
-				colframe=gray!50,      % Colore del bordo
-				width=0.65\textwidth,  % Larghezza del box
-				arc=2pt,               % Arrotondamento degli angoli
-				boxrule=0.8pt,         % Spessore del bordo
-				halign=left,           % Allineamento del testo interno
-				before skip=0.5cm,     % Spazio sopra il box
-				after skip=0.5cm       % Spazio sotto il box
-				]
-				\begin{verbatim}
-					PROGETTO2_MCDS/
-					├── data/
-					├── src/
-					│   ├── gui/
-					│   ├── logic/
-					│   │   ├── compressor.py
-					│   │   └── dct.py
-					│   └── test/
-					│       └── test.py
-					├── venv/
-					├── main.py
-					├── .gitignore
-					└── README.md
-				\end{verbatim}
-			\end{tcolorbox}
-			\caption{Struttura delle directory del progetto}
-		\end{figure}
+\maketitle
 
-	\begin{itemize}
-		\item \textbf{\texttt{data/}}: Cartella contenente le immagini in formato bitmap (\texttt{.bmp}) in toni di grigio, utilizzate come input per la compressione.
-		
-		\item \textbf{\texttt{src/}} (Source): Contiene l'intero codice sorgente dell'applicazione, suddiviso nei seguenti sotto-moduli specializzati:
-		\begin{itemize}
-			\item \textbf{\texttt{gui/}}: Contiene il codice che implementa l'interfaccia grafica che consente all'utente di navigare nel filesystem per selezionare l'immagine e inserire i parametri numerici di input ($F$ e $d$).
-			\item \textbf{\texttt{logic/}}: Contiene il nucleo computazionale dell'applicativo:
-			\begin{itemize}
-				\item \texttt{dct.py}: Contiene l'implementazione sequenziale della DCT/DCT2 definita ``fatta in casa'' ($O(N^3)$) e le funzioni di interfaccia con la libreria scientifica per la versione ``fast'' ($O(N^2 \log N)$), necessarie al confronto dei tempi di esecuzione.
-				\item \texttt{compressor.py}: Contiene l'algoritmo di compressione JPEG-like, occupandosi della segmentazione dell'immagine in macro-blocchi $F \times F$, del filtraggio delle frequenze oltre la diagonale $d$.
-			\end{itemize}
-			\item \textbf{\texttt{test/test.py}}: Contiene Script di Landmark-Testing utilizzato per verificare la correttezza numerica e lo scaling delle funzioni implementate, confrontando i risultati della DCT monodimensionale e bidimensionale con la matrice di test $8 \times 8$ fornita nelle specifiche.
-		\end{itemize}
-		
-		\item \textbf{\texttt{main.py}}: Il punto di ingresso (\textit{entry-point}) principale dell'applicazione che inizializza l'interfaccia utente e coordina il flusso dei dati tra i vari moduli.
-		
-		\item \textbf{\texttt{venv/}}, \textbf{\texttt{.gitignore}}, \textbf{\texttt{README.md}}: File e directory di configurazione per la gestione dell'ambiente virtuale isolato, l'esclusione di file ridondanti dal controllo di versione e la stesura delle istruzioni rapide per l'installazione e l'esecuzione del programma.
-	\end{itemize}
-	\section{parte 1}
-	\subsection{Analisi delle Prestazioni della $\text{DCT2}$ e confronto con $\text{FFT}$ }
-	
-	L'algoritmo implementato da noi, applica la definizione classica della trasformata sfruttando la proprietà di separabilità. La $\text{DCT2}$ viene quindi calcolata come due trasformate monodimensionali in cascata (prima per righe e poi per colonne) tramite prodotti matrice-matrice del tipo $c = T \cdot f \cdot T^T$. Ciascun prodotto richiede l'esecuzione di cicli annidati su strutture dati di dimensione $N$, portando il costo computazionale teorico a un ordine di complessità pari a $\mathcal{O}(N^3)$.
-	
-	Al contrario, la routine della libreria ottimizzata si appoggia ad algoritmi di tipo Fast correlati alla Trasformata Rapida di Fourier ($\text{FFT}$). Invece di eseguire il prodotto matriciale diretto, la $\text{FFT}$ riduce drasticamente il numero di operazioni ridondanti. Sfruttando la simmetria e  la ricorsività (secondo una logica \textit{divide et impera}), il problema di dimensione $N$ viene suddiviso in sottoproblemi più piccoli. Questo approccio abbatte la complessità computazionale del calcolo bidimensionale a:
-	\begin{equation}
-		\mathcal{O}(N^2 \log_2 N)
-	\end{equation}
-	dove $N^2$ rappresenta il numero totale di pixel dell'immagine, mentre il fattore logaritmico descrive l'efficienza della scomposizione in frequenza.
-	
-	\subsubsection{Dati Sperimentali Raccolti}
-	
-	La validazione sperimentale è stata condotta su matrici quadrate di dimensione $N$ crescente [128, 256, 512], mediando i tempi su 100 run indipendenti per abbattere il rumore di fondo. 
-	
-	I risultati, riassunti nella Tabelle~\ref{tab:tempi_manuale} \ref{tab:tempi_libreria} e il grafico in Figura~\ref{fig:grafico_tempi}, confermano sperimentalmente i modelli di complessità teorica precedentemente descritti.
-	
-	\begin{table}[H]
-		\centering
-		\begin{tabular}{rcc}
-			\hline
-			\textbf{N} & \textbf{Tempo Medio Manuale} $\mathcal{O}(N^3)$ \textbf{[s]} & \textbf{Rapporto} $T(N)/T(N/2)$ \\ \hline
-			128 & $1.767253 \times 10^{-1}$ & --    \\
-			256 & $1.771358 \times 10^{0}$  & 10.02 \\
-			512 & $1.404507 \times 10^{1}$  & 7.93  \\ \hline
-		\end{tabular}
-		\caption{Tempi medi di esecuzione nostra implementazione al variare di $N$.}
-		\label{tab:tempi_manuale}
-	\end{table}
-	
-	L'andamento dell'algoritmo implementato da noi mostra una crescita dei tempi $\mathcal{O}(N^3)$. Quando la dimensione della matrice raddoppia, passando da $N=256$ a $N=512$, il tempo teorico di esecuzione dovrebbe aumentare di un fattore pari a $2^3 = 8$. Dai dati sperimentali reali si osserva un incremento effettivo estremamente coerente con la teoria, pari a $7.93$, confermando quanto detto in precedenza.
-	
-	Il picco registrato nel passaggio precedente da $N=128$ a $N=256$, pari a un rapporto di $10.02$ è invece dovuto a colli di bottiglia hardware, in quanto matrici $128$x$128$ possono essere salvate in cache, mentre matrici $256$x$256$ saturano la memoria cache della CPU (\textit{cache miss}) e dunque passano alla memoria RAM, più lenta, che altera dunque il rapporto.
-	
-	
-	\begin{table}[H]
-		\centering
-		\begin{tabular}{rcc}
-			\hline
-			\textbf{N} & \textbf{Tempo Medio Libreria} $\mathcal{O}(N^2 \log_2 N)$ \textbf{[s]} & \textbf{Rapporto} $T(N)/T(N/2)$ \\ \hline
-			128 & $4.061909 \times 10^{-4}$ & --    \\
-			256 & $1.367665 \times 10^{-3}$ & 3.37  \\
-			512 & $5.212104 \times 10^{-3}$ & 3.81  \\ \hline
-		\end{tabular}
-		\caption{Tempi medi di esecuzione per l'algoritmo di libreria SciPy al variare di $N$.}
-		\label{tab:tempi_libreria}
-	\end{table}
-	
-	Per quanto riguarda l'algoritmo di libreria, la complessità attesa segue $\mathcal{O}(N^2 \log_2 N)$. In questo caso al raddoppiare della dimensione della matrice il rapporto di crescita teorico non è costante ma decresce al crescere di $N$. Dunque i rapporti teorici attesi sono pari a:
-	\begin{align}
-		\text{Target Teorico } (128 \rightarrow 256): \quad & \frac{256^2 \cdot \log_2(256)}{128^2 \cdot \log_2(128)} = 4 \cdot \frac{8}{7} \approx 4.57 \\
-		\text{Target Teorico } (256 \rightarrow 512): \quad & \frac{512^2 \cdot \log_2(512)}{256^2 \cdot \log_2(256)} = 4 \cdot \frac{9}{8} = 4.50
-	\end{align}
-	
-	Calcolando sperimentalmente, i rapporti sui tempi medi emerge uno scostamento rispetto al modello teorico puro:
-	\begin{align}
-		\text{Rapporto Reale } (128 \rightarrow 256): \quad & \frac{1.367665 \times 10^{-3}}{4.061909 \times 10^{-4}} \approx 3.37 \\
-		\text{Rapporto Reale } (256 \rightarrow 512): \quad & \frac{5.212104 \times 10^{-3}}{1.367665 \times 10^{-3}} \approx 3.81
-	\end{align}
-	
-	La differenza tra i valori teorici e quelli sperimentali si spiega analizzando le componenti hardware e software del sistema.
-	In entrambi i casi notiamo che il rapporto reale è inferiore a quello teorico. Questo evidenzia l'efficacia delle ottimizzazioni a basso livello della libreria \texttt{SciPy} (scritta in C/Fortran). A queste dimensioni intermedie, l'algoritmo sfrutta appieno la vettorizzazione dei registri della CPU e il parallelismo hardware, abbattendo i tempi di calcolo oltre la semplice previsione matematica.
-	
+\section{Introduzione}
+L'elaborato descrive l'analisi e lo sviluppo di un sistema software per la compressione di immagini in toni di grigio. Gli obiettivi del progetto si articolano in due fasi principali:
+\begin{itemize}
+	\item \textbf{Analisi prestazionale}: dedicata all'implementazione in Python dell'algoritmo DCT2 e confronto approfondito con la routine FFT della libreria \texttt{scipy}.
+	\item \textbf{Compressione JPEG}: sviluppo di un sistema di compressione d'immagine in scala di grigio basato sullo standard JPEG (senza l'ausilio della matrice di quantizzazione).
+\end{itemize}
+
+\section{Struttura della libreria}
+Il software è stato sviluppato con il linguaggio Python e strutturato in modo modulare per garantire separazione tra la logica di calcolo matematico, l'interfaccia utente, i test di validazione. Di seguito viene descritto il ruolo di ciascuna cartella e file presenti nella radice del progetto:
+
 	\begin{figure}[H]
-		\centering
-		\includegraphics[width=0.85\textwidth]{immagini/grafico_tempi.png}
-		\caption{Andamento dei tempi medi di esecuzione al variare della dimensione $N$.}
-		\label{fig:grafico_tempi}
+		\centering % Centra il box rispetto alla pagina
+		\begin{tcolorbox}[
+			colback=gray!10,       % Colore dello sfondo
+			colframe=gray!50,      % Colore del bordo
+			width=0.65\textwidth,  % Larghezza del box
+			arc=2pt,               % Arrotondamento degli angoli
+			boxrule=0.8pt,         % Spessore del bordo
+			halign=left,           % Allineamento del testo interno
+			before skip=0.5cm,     % Spazio sopra il box
+			after skip=0.5cm       % Spazio sotto il box
+			]
+			\begin{verbatim}
+				PROGETTO2_MCDS/
+				├── data/
+				├── src/
+				│   ├── gui/
+				│   ├── logic/
+				│   │   ├── compressor.py
+				│   │   └── dct.py
+				│   └── test/
+				│       └── test.py
+				├── venv/
+				├── main.py
+				├── .gitignore
+				└── README.md
+			\end{verbatim}
+		\end{tcolorbox}
+		\caption{Struttura delle directory del progetto}
 	\end{figure}
-	
-	\medskip
-	In conclusione possiamo dire che al crescere di $N$, il divario prestazionale tra i due approcci diventa significativo. Alla dimensione massima testata di $N=512$, la routine ottimizzata conclude il calcolo in appena $5.21$ millisecondi ($5.212104 \times 10^{-3}$ s), risultando circa 2695 volte più rapida dell'algoritmo manuale da noi implementato, il quale richiede invece ben $14.04$ secondi ($1.404507 \times 10^{1}$ s).
-	
-	\section{parte 2}
-	Fissato un $F=8$ fare i confronti ma nella 
-	
-	fissato F=8 fare i confronti aumentando d e diminuendo d (prenderei come valore di riferimento il 25%)  e valutare L'MSE e al qualità visiva sulla stessa immagine e commentare.
-	Fissato F e d fare un confronto tra MSE e visivo tra un'immagine naturale e un a scacchoiera 
-	Qualche cosa diu quelitativo aumentando la dimenzione di F
-	
-	
-	\medskip
-	
-	Per valutare il comportamento e l'efficienza dell'algoritmo implementato, sono stati adottati tre diversi approcci di valutazione: come metrica di valutazione quantitativa è stato utilizzato l'Errore Quadratico Medio (MSE) e come metrica di valutazione qualitativa un'analisi visiva delle immagini risultanti.
-	
-	\subsubsection{Variazione del parametro di taglio $d$ (Fissato $F=8$)}
-	Come prima prova è stata fissata la dimensione del blocco a $F=8$, variando il parametro $d$ che rappresenta il numero dei coefficienti della DCT salvati. Prendendo, 80x80.bmp come immagine e assumendo di salvare il $25\%$ delle frequenze ($d\approx5$) si ottine un MSE pari a 30.55. 
-	\begin{itemize}
-		\item \textbf{Salvando il $50\%$ delle frequenze ($d\approx8$)} l'MSE decresce assumendo il valore di $8.89$. Dal punto di vista qualitativo, l'immagine risulta praticamente indistinguibile dall'originale. Il salvataggio dei coefficienti di ordine superiore introduce nel sistema le alte frequenze spaziali, necessarie per la ricostruzione accurata dei dettagli fini e dei contorni netti.
-		\item \textbf{Salvando il $5\%$ delle frequenze ($d\approx2$)} l'MSE aumenta a $58.42$. Questo porta ai due artefatti tipici della compressione:
-		\begin{enumerate}
-			\item \textit{Effetto blocco:} le discontinuità ai confini delle sottomatrici $8 \times 8$ diventano marcate.
-			\item \textit{Sfocatura:} la rimozione quasi totale delle alte frequenze cancella il gradino bianco nero, rendendo sfocato il passaggio dal bianco al nero.
-		\end{enumerate}
-	\end{itemize}
 
-    \noindent
-      Un’osservazione interessante è che, impostando \texttt{d = 1}, l’immagine risulta suddivisa in blocchi ciascuno dei quali appare come una regione a tonalità di \textbf{grigio uniforme}. Questo avviene perché la maggior parte dei coefficienti ad alta frequenza viene annullata dalla quantizzazione, lasciando soltanto la componente a bassa frequenza che corrisponde al valore medio del blocco.
-    
-	\subsubsection{Confronto tra Immagine Naturale e Scacchiera (Fissati $F$ e $d$)}
-	Mantenendo fissi i parametri $F=8$ (dimensione di blocco) e $d=5$ (soglia di taglio), l'algoritmo viene applicato a due immagini in input con caratteristiche spettrali opposte: un'immagine fotografica naturale cattedral.bmp e un'immagine sintetica geometrica a scacchiera 80x80.bmp. Da un'analisi qualitativa emerge che:
+\begin{itemize}
+	\item \textbf{\texttt{data/}}: Cartella contenente le immagini in formato bitmap (\texttt{.bmp}) in toni di grigio, utilizzate come input per la compressione.
+	
+	\item \textbf{\texttt{src/}} (Source): Contiene l'intero codice sorgente dell'applicazione, suddiviso nei seguenti sotto-moduli specializzati:
 	\begin{itemize}
-		\item L'immagine naturale presenta un valore di MSE pari a $2.20$ e una stabilità visiva ottimale. Le immagini reali sono segnali a bassa variazione locale, caratterizzati da forti correlazioni spaziali.
-		\item L'immagine a scacchiera invece evidenzia un MSE pari a $30.55$, valore elevato e una sfocatura visiva. La transizione istantanea tra bianco e nero puro richiede uno spettro elevato di alte frequenze per essere ricostruita. 
-	\end{itemize}
-	Questo confronto dimostra che l'efficienza della trasformata DCT non è assoluta, ma strettamente vincolata alla natura del segnale informativo. Essa si rivela una base ottimale per l'approssimazione di segnali continui e morbidi (immagini naturali), mentre degrada rapidamente se applicata a grafiche geometriche ad alto contrasto locale.
-
-	
-	\subsubsection{Analisi Qualitativa all'Aumentare della Dimensione del Blocco $F$}
-	In questa analisi si è valutato il comportamento della ricostruzione modificando il parametro $F$ a dimensioni superiori ($F = 8, 16, 24, 32$) e mantenendo inalterata la proporzione di taglio al $25\%$.
-	
-	\paragraph{Immagine cathedral.bmp} ~\\
-	L'analisi dei dati quantitativi (Tabella~\ref{tab:esperimento_F_variabile}) e delle ricostruzioni visive permette di evidenziare alcune differenze fondamentali del comportamento della DCT al variare del blocco $F$.
-	
-	Dal punto di vista percettivo, la qualità dell'immagine rimane sorprendentemente stabile su tutte le configurazioni, senza perdite visibili di dettaglio. Tuttavia, l'indicatore numerico dell'errore (MSE) mostra un andamento chiaro: staziona intorno a $2.20$ per $F=8$ e $F=16$, per poi subire un aumento a $16.78$ ($F=24$) e $19.49$ ($F=32$).
-		\begin{table}[H]
-			\centering
-			\begin{tabular}{rccc}
-				\hline
-				\textbf{$F$} & \textbf{$d$} & \textbf{Percentuale} & \textbf{MSE} \\ \hline
-				8  & 5  & 23.44\% & 2.20  \\
-				16 & 11 & 25.78\% & 2.16  \\
-				24 & 17 & 26.56\% & 16.78 \\
-				32 & 22 & 24.71\% & 19.49 \\ \hline
-			\end{tabular}
-			\caption{MSE al variare di $F$, mantenendo costante il tasso di taglio al 25\%.}
-			\label{tab:esperimento_F_variabile}
-		\end{table}
- 
-		
-		Avendo escluso effetti di bordo tramite il taglio diretto della matrice all'altezza dell'ultimo blocco utile, questa crescita dell'MSE è legata esclusivamente alla natura spettrale della trasformata su aree estese. All'aumentare di $F$, il blocco racchiude al suo interno una quantità nettamente maggiore di dettagli, contorni e variazioni locali. Mantenendo la diagonale costante al $25\%$, la DCT si trova a dover approssimare zone molto più complesse ed eterogenee con lo stesso set proporzionale di basse frequenze. Visivamente questo effetto si nota solo esaminando i margini laterali dei singoli macro-blocchi, dove il troncamento netto delle frequenze più alte genera una lievissima perdita di coerenza spaziale inter-blocco. È proprio questa minima dispersione energetica su matrici grandi a far salire numericamente l'MSE, nonostante il nucleo centrale della foto preservi una fedeltà visiva ottimale.
-		
-		
-	\paragraph{Immagine 160x160.bmp} ~\\
-	L'applicazione dell'algoritmo di compressione al pattern geometrico della scacchiera mostra un andamento del MSE più elevato rispetto all'immagine naturale e fortemente oscillante (Tabella~\ref{tab:esperimento_scacchiera}): l'errore staziona intorno a $31$ per $F=8$ e $F=16$, aumentando poi a $164.92$ per $F=24$ e diminuendo nuovamente a $32.42$ per $F=32$. 
-				
-		\begin{table}[H]
-			\centering
-			\begin{tabular}{rccc}
-					\hline
-					\textbf{$F$} & \textbf{$d$} & \textbf{Percentuale} & \textbf{MSE} \\ \hline
-					8  & 5  & 23.44\% & 30.55  \\
-					16 & 11 & 25.78\% & 32.47  \\
-					24 & 17 & 26.56\% & 164.92 \\
-					32 & 22 & 24.71\% & 32.42  \\ \hline
-				\end{tabular}
-				\caption{MSE al variare del blocco $F$, con tasso di taglio costante al 25\%.}
-				\label{tab:esperimento_scacchiera}
-		\end{table}
-			
-	
-		Questo comportamento evidenzia il legame tra la dimensionalità del blocco $F$ e la periodicità del segnale geometrico quando si applica il taglio diretto della matrice:
+		\item \textbf{\texttt{gui/}}: Contiene il codice che implementa l'interfaccia grafica che consente all'utente di navigare nel filesystem per selezionare l'immagine e inserire i parametri numerici di input ($F$ e $d$).
+		\item \textbf{\texttt{logic/}}: Contiene il nucleo computazionale dell'applicativo:
 		\begin{itemize}
-			\item \textbf{caso per $F=24$ ($\text{MSE} = 164.92$):} Poiché la dimensione originale dell'immagine ($160$) non è divisibile per $24$, l'operazione di taglio rimuove gli ultimi $16$ pixel della matrice ($160 - 24 \times 6 = 16$). Questo troncamento asimmetrico spezza a metà l'ultima fila di scacchi geometrici. La sottomatrice così tagliata introduce nello spettro DCT una forte componente a gradino artificiale che, privata del $75\%$ delle alte frequenze a causa della soglia $d=17$, genera una distorsione locale che distrugge la linearità dei bordi e fa aumentare il MSE dell'intera figura.
-			\item \textbf{caso per $F=8, 16, 32$ ($\text{MSE} \approx 32$):} Al contrario delle immagini naturali, l'errore non cresce all'aumentare del blocco se questo rimane un sottomultiplo esatto del piano immagine ($160 / 32 = 5$ blocchi perfetti). Quando $F$ si allinea con la griglia geometrica, ogni sottomatrice cattura una porzione perfettamente simmetrica e speculare dei quadrati bianchi e neri. Lo scostamento spettrale dovuto al taglio frequenziale si distribuisce così in modo identico e bilanciato su tutti i blocchi, mantenendo l'errore costante e visivamente confinato alle sole linee di transizione netta dei bordi.
+			\item \texttt{dct.py}: Contiene l'implementazione sequenziale della DCT/DCT2 definita ``fatta in casa'' ($O(N^3)$) e le funzioni di interfaccia con la libreria scientifica per la versione ``fast'' ($O(N^2 \log N)$), necessarie al confronto dei tempi di esecuzione.
+			\item \texttt{compressor.py}: Contiene l'algoritmo di compressione JPEG-like, occupandosi della segmentazione dell'immagine in macro-blocchi $F \times F$, del filtraggio delle frequenze oltre la diagonale $d$.
 		\end{itemize}
+		\item \textbf{\texttt{test/test.py}}: Contiene Script di Landmark-Testing utilizzato per verificare la correttezza numerica e lo scaling delle funzioni implementate, confrontando i risultati della DCT monodimensionale e bidimensionale con la matrice di test $8 \times 8$ fornita nelle specifiche.
+	\end{itemize}
+	
+	\item \textbf{\texttt{main.py}}: Il punto di ingresso (\textit{entry-point}) principale dell'applicazione che inizializza l'interfaccia utente e coordina il flusso dei dati tra i vari moduli.
+	
+	\item \textbf{\texttt{venv/}}, \textbf{\texttt{.gitignore}}, \textbf{\texttt{README.md}}: File e directory di configurazione per la gestione dell'ambiente virtuale isolato, l'esclusione di file ridondanti dal controllo di versione e la stesura delle istruzioni rapide per l'installazione e l'esecuzione del programma.
+\end{itemize}
 
-\section{How to Run}
-L'esecuzione é semplice in quanto é sufficiente, dalla root del progetto eseguire i seguenti comandi da terminale: "\texttt{cd src}" e poi "\texttt{python main.py}".
-\newline \newline
-Dopodiché é anche possibile eseguire il test fornito come benchmark e sempre dalla root bisogna eseguire: "\texttt{cd src}", "\texttt{cd test}" e poi "\texttt{python test.py}"
+\section{DCT2 e FFT}
+\subsection{Analisi delle Prestazioni e Complessità}
+
+L'algoritmo implementato da noi, applica la definizione classica della trasformata sfruttando la proprietà di separabilità. 
+La $\text{DCT2}$ viene quindi calcolata come due trasformate monodimensionali in cascata (prima per righe e poi per colonne) 
+tramite prodotti matrice-matrice del tipo $c = T \cdot f \cdot T^T$. Ciascun prodotto richiede l'esecuzione di cicli annidati 
+su strutture dati di dimensione $N$, portando il costo computazionale teorico a un ordine di complessità pari a $\mathcal{O}(N^3)$.
+
+Al contrario, la routine della libreria ottimizzata si appoggia ad algoritmi di tipo Fast correlati alla Trasformata Rapida di Fourier 
+($\text{FFT}$). Invece di eseguire il prodotto matriciale diretto, la $\text{FFT}$ riduce drasticamente il numero di operazioni 
+ridondanti. Sfruttando la simmetria e  la ricorsività (secondo una logica \textit{divide et impera}), il problema di dimensione $N$ 
+viene suddiviso in sottoproblemi più piccoli. Questo approccio abbatte la complessità computazionale del calcolo bidimensionale a:
+\begin{equation}
+	\mathcal{O}(N^2 \log_2 N)
+\end{equation}
+dove $N^2$ rappresenta il numero totale di pixel dell'immagine, mentre il fattore logaritmico descrive l'efficienza della scomposizione 
+in frequenza.
+
+\subsubsection{Dati Sperimentali Raccolti}
+
+La validazione sperimentale è stata condotta su matrici quadrate di dimensione $N$ crescente [128, 256, 512], mediando i tempi su 100 run indipendenti per abbattere il rumore di fondo. 
+
+I risultati, riassunti nella Tabelle~\ref{tab:tempi_manuale} \ref{tab:tempi_libreria} e il grafico in Figura~\ref{fig:grafico_tempi}, confermano sperimentalmente i modelli di complessità teorica precedentemente descritti.
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{rcc}
+		\hline
+		\textbf{N} & \textbf{Tempo Medio Manuale} $\mathcal{O}(N^3)$ \textbf{[s]} & \textbf{Rapporto} $T(N)/T(N/2)$ \\ \hline
+		128 & $1.767253 \times 10^{-1}$ & --    \\
+		256 & $1.771358 \times 10^{0}$  & 10.02 \\
+		512 & $1.404507 \times 10^{1}$  & 7.93  \\ \hline
+	\end{tabular}
+	\caption{Tempi medi di esecuzione nostra implementazione al variare di $N$.}
+	\label{tab:tempi_manuale}
+\end{table}
+
+L'andamento dell'algoritmo implementato da noi mostra una crescita dei tempi $\mathcal{O}(N^3)$. Quando la dimensione della matrice raddoppia, passando da $N=256$ a $N=512$, il tempo teorico di esecuzione dovrebbe aumentare di un fattore pari a $2^3 = 8$. Dai dati sperimentali reali si osserva un incremento effettivo estremamente coerente con la teoria, pari a $7.93$, confermando quanto detto in precedenza.
+
+Il picco registrato nel passaggio precedente da $N=128$ a $N=256$, pari a un rapporto di $10.02$ è invece dovuto a colli di bottiglia hardware, in quanto matrici $128$x$128$ possono essere salvate in cache, mentre matrici $256$x$256$ saturano la memoria cache della CPU (\textit{cache miss}) e dunque passano alla memoria RAM, più lenta, che altera dunque il rapporto.
+
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{rcc}
+		\hline
+		\textbf{N} & \textbf{Tempo Medio Libreria} $\mathcal{O}(N^2 \log_2 N)$ \textbf{[s]} & \textbf{Rapporto} $T(N)/T(N/2)$ \\ \hline
+		128 & $4.061909 \times 10^{-4}$ & --    \\
+		256 & $1.367665 \times 10^{-3}$ & 3.37  \\
+		512 & $5.212104 \times 10^{-3}$ & 3.81  \\ \hline
+	\end{tabular}
+	\caption{Tempi medi di esecuzione per l'algoritmo di libreria SciPy al variare di $N$.}
+	\label{tab:tempi_libreria}
+\end{table}
+
+Per quanto riguarda l'algoritmo di libreria, la complessità attesa segue \\ $\mathcal{O}(N^2 \log_2 N)$. In questo caso al raddoppiare 
+della dimensione della matrice il rapporto di crescita teorico non è costante ma decresce al crescere di $N$. Dunque i rapporti teorici attesi sono pari a:
+\begin{align}
+	\text{Target Teorico } (128 \rightarrow 256): \quad & \frac{256^2 \cdot \log_2(256)}{128^2 \cdot \log_2(128)} = 4 \cdot \frac{8}{7} \approx 4.57 \\
+	\text{Target Teorico } (256 \rightarrow 512): \quad & \frac{512^2 \cdot \log_2(512)}{256^2 \cdot \log_2(256)} = 4 \cdot \frac{9}{8} = 4.50
+\end{align}
+
+Calcolando sperimentalmente, i rapporti sui tempi medi emerge uno scostamento rispetto al modello teorico puro:
+\begin{align}
+	\text{Rapporto Reale } (128 \rightarrow 256): \quad & \frac{1.367665 \times 10^{-3}}{4.061909 \times 10^{-4}} \approx 3.37 \\
+	\text{Rapporto Reale } (256 \rightarrow 512): \quad & \frac{5.212104 \times 10^{-3}}{1.367665 \times 10^{-3}} \approx 3.81
+\end{align}
+
+La differenza tra i valori teorici e quelli sperimentali si spiega analizzando le componenti hardware e software del sistema.
+In entrambi i casi notiamo che il rapporto reale è inferiore a quello teorico. Questo evidenzia l'efficacia delle ottimizzazioni a basso livello della libreria \texttt{SciPy} (scritta in C/Fortran). A queste dimensioni intermedie, l'algoritmo sfrutta appieno la vettorizzazione dei registri della CPU e il parallelismo hardware, abbattendo i tempi di calcolo oltre la semplice previsione matematica.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{immagini/grafico_tempi.png}
+	\caption{Andamento dei tempi medi di esecuzione al variare della dimensione $N$.}
+	\label{fig:grafico_tempi}
+\end{figure}
+
+\medskip
+In conclusione possiamo dire che al crescere di $N$, il divario prestazionale tra i due approcci diventa significativo. 
+Alla dimensione massima testata di $N=512$, la routine ottimizzata conclude il calcolo in appena $5.21$ millisecondi ($5.212104 \times 10^{-3}$ s), risultando circa 2695 volte più rapida dell'algoritmo manuale da noi implementato, il quale richiede invece ben $14.04$ secondi ($1.404507 \times 10^{1}$ s).
+
+\section{Analisi qualità della compressione}
+Il nostro progetto implementa un algoritmo di compressione simil-Jpeg, infatti è possibile scegliere due parametri, \textbf{F} e 
+\textbf{d}, che rispettivamente rappresentano la dimensione dei blocchi e il numero delle frequenze tagliate (se d è alto taglio poche 
+frequenze, mentre se è basso ne taglio molte). Per quanto riguarda Jpeg questi parametri sono fissati a F = 8 e d rappresenta la qualità 
+dell'immagine finale, mentre nella nostra implementazione è possibile sceglierli a piacere. 
+
+Per valutare un'immagine compressa entrano in gioco due fattori principali. Infatti è possibile sia effettuare un'analisi puramente 
+matematica, con valori come l'\textbf{MSE} (mean-square-error), il \textbf{SRN} (signal-to-noise-rate) oppure la differenza tra le 
+immagini. Queste metriche però non considerano l'aspetto soggettivo dell'immagine, infatti gli algoritmi di compressione 
+tagliano appositamente le altre frequenze, dove l'occhio umano è meno sensibile, al fine di comprimere molto l'informazione, 
+ma lasciando la qualità visiva dell'immagine buona.
+
+Di seguito analizziamo diverse immagini confrontando sia l'aspetto soggettivo che quello oggettivo, cercando di trarre delle conclusioni 
+su come funziona la compressione delle immagini. Abbiamo scelto come misura oggettiva il \textbf{RMSE}, la cui formula è:
+\[
+	RMSE = \sqrt{\frac{1}{MN} \sum_{i=1}^{N} \sum_{j=1}^{M} {[Y(i,j) - \hat{Y}(i,j)]^2}}
+\]
+in quanto è una misura abbastanza intuitiva (sottrae pixel per pixel le due immagini, ne calcola il quadrato e media gli errori), 
+ma al contempo esplicativa.
+
+\subsubsection{Variazione del parametro di taglio d}
+Come prima prova abbiamo usato l'immagine a scacchiera 80x80 e 
+abbiamo fissato la dimensione del blocco a $F=8$, variando il parametro $d$, per verificare la variazione di qualità dell'immagine 
+compressa. Abbiamo usato come benchmark per le altre compressioni una compressione standard con d = 5, in cui l'MSE risulta 
+di 30.55 e la qualità visiva abbastanza degradata, ma comunque accettabile.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.7\textwidth]{immagini/80x80.png}
+	\caption{Immagine 80x80.bmp}
+	\label{FIG:QUADR_80}
+\end{figure}
+\begin{itemize}
+	\item \textbf{Salvando il $50\%$ delle frequenze ($d\approx8$)} l'RMSE decresce assumendo il valore di $8.89$. Dal punto di vista 
+	qualitativo, l'immagine risulta praticamente indistinguibile dall'originale. Il salvataggio dei coefficienti di ordine superiore 
+	introduce nel sistema le alte frequenze spaziali, necessarie per la ricostruzione accurata dei dettagli fini e dei contorni netti.
+	\item \textbf{Salvando il $5\%$ delle frequenze ($d\approx2$)} l'RMSE aumenta a $58.42$. Questo porta ai due artefatti tipici della 
+	compressione:
+	\begin{enumerate}
+		\item \textit{Effetto blocco:} le discontinuità ai confini delle sottomatrici $8 \times 8$ diventano marcate.
+		\item \textit{Sfocatura:} la rimozione quasi totale delle alte frequenze cancella il gradino bianco nero, 
+		rendendo sfocato il passaggio dal bianco al nero.
+	\end{enumerate}
+\end{itemize}
+
+
+\noindent
+Un'osservazione interessante è che, impostando \texttt{d = 1}, l'immagine risulta suddivisa in blocchi ciascuno dei quali appare 
+come una regione a tonalità di \textbf{grigio uniforme}. Questo avviene perché la maggior parte dei coefficienti ad alta frequenza 
+viene annullata dalla quantizzazione, lasciando soltanto la componente a bassa frequenza che corrisponde al valore medio del blocco.
+
+\subsubsection{Analisi Immagini Geometriche}
+Innanzitutto partiamo le immagini geometriche, dove sono presenti dei blocchi bianchi e neri alternati a scacchiera.
+In questa analisi si abbiamo valutato il comportamento della ricostruzione modificando il parametro $F$ a dimensioni superiori 
+($F = 8, 16, 24, 32$) e mantenendo inalterata la proporzione di taglio al $25\%$. Proviamo i valori di F e d sull'immagine 
+160x160.bmp:
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.7\textwidth]{immagini/Confronto_quadrati.png}
+	\caption{Immagine 160x160.bmp}
+	\label{FIG:QUADR}
+\end{figure}
+	
+\begin{table}[H]
+	\centering
+	\begin{tabular}{rccc}
+			\hline
+			\textbf{$F$} & \textbf{$d$} & \textbf{Percentuale} & \textbf{RMSE} \\ \hline
+			8  & 5  & 23.44\% & 30.55  \\
+			16 & 11 & 25.78\% & 32.47  \\
+			24 & 17 & 26.56\% & 164.92 \\
+			32 & 22 & 24.71\% & 32.42  \\ \hline
+		\end{tabular}
+		\caption{MSE al variare del blocco $F$, con tasso di taglio costante al 25\%.}
+		\label{tab:esperimento_scacchiera}
+\end{table}
+
+Questo comportamento evidenzia il legame tra la dimensionalità del blocco $F$ e la periodicità del segnale geometrico 
+quando si applica il taglio diretto della matrice. Infatti nel caso con $F=24$ ($\text{RMSE} = 164.92$), poiché la dimensione 
+originale dell'immagine ($160$) non è divisibile per $24$, l'operazione di taglio rimuove gli ultimi $16$ pixel della matrice 
+($160 - 24 \times 6 = 16$). Questo troncamento asimmetrico spezza a metà l'ultima fila di scacchi geometrici, aumentando 
+di molto il RMSE. Anche visivamente dalla figura \ref{FIG:QUADR}, si può notare questo fenomeno, 
+infatti la qualità generale visiva rimane abbastanza invariata per tutte le compressioni, ma nel caso con F = 24 
+il bordo destro risulta troncato in maniera evidente.
+
+\subsubsection{Analisi Immagini Naturali}
+In questa sezione confrontiamo due immagini naturali, in particolare quella del cervo (deer.bmp \ref{FIG:CERVO}) e quella del ponte 
+(bridge.bmp \ref{FIG:PONTE}), con parametri F = 32 e d = 20.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{immagini/ponte.png}
+	\label{FIG:PONTE}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1\textwidth]{immagini/cervo.png}
+	\label{FIG:CERVO}
+\end{figure}
+
+Visivamente è facile notare che l'immagine del ponte è rimasta praticamente invariata, mentre quella del cervo, seppur mantenendo 
+una buona qualità generale, presenta alcuni artefatti nelle zone di alta frequenza (baffi, sopra il muso, ...). Soprendentemente 
+in questo caso l'RMSE non riflette questa osservazione, infatti è uguale a \texttt{38.53} per il ponte, mentre \texttt{33.23} 
+per il cervo; questo significa che dal punto di vista soggettivo l'immagine del ponte è peggiore, ma da come si può notare 
+soggettivamente è il contrario. 
+
+\subsubsection{Conclusioni}
+Provando altre immagini, è facile effettuare alcune osservazioni. L'algoritmo di compressione si comporta in modo \textit{"poco prevedibile"}
+sulle immagini "matematiche", diversamente da quelle reali, che generalmente mantengo una qualità maggiore. 
+Generalmente è comunque possibile notare che questo algoritmo di compressione è impreciso sulle zone di alta frequenza (cioè dove 
+il colore cambia repentinamente), infatti, ad esempio, nell'immagine del gradiente (gradient.bmp), dato che il cambiamento di colore è 
+graduale e senza variazioni, l'rmse è minimo.
+
+Si può quindi concludere che l'algoritmo a parità di parametri (F e d) non comprime allo stesso modo, ma è molto dipendente dalla 
+struttura dell'immagine.
 
 \end{document}
