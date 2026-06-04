@@ -40,6 +40,10 @@
 	
 \maketitle
 
+\begin{center}
+\href{https://github.com/ffusi12/Progetto2_MCdS}{Link al codice del progetto}
+\end{center}
+
 \section{Introduzione}
 L'elaborato descrive l'analisi e lo sviluppo di un sistema software per la compressione di immagini in toni di grigio. 
 Gli obiettivi del progetto si articolano in due fasi principali:
@@ -52,7 +56,7 @@ Gli obiettivi del progetto si articolano in due fasi principali:
 \section{Struttura della libreria}
 Il software è stato sviluppato con il linguaggio Python e strutturato in modo modulare per garantire separazione tra la logica 
 di calcolo matematico, l'interfaccia utente, i test di validazione. Di seguito viene descritto il ruolo di ciascuna cartella e 
-file presenti nella radice del progetto:
+file presenti mel progetto:
 
 	\begin{figure}[H]
 		\centering % Centra il box rispetto alla pagina
@@ -86,19 +90,19 @@ file presenti nella radice del progetto:
 	\end{figure}
 
 \begin{itemize}
-	\item \textbf{\texttt{data/}}: Cartella contenente le immagini in formato bitmap (\texttt{.bmp}) in toni di grigio, utilizzate come 
+	\item \textbf{\texttt{data/}}: Cartella contenente le immagini in formato bitmap (\texttt{.bmp}) a scala di grigi, utilizzate come 
 	input per la compressione.
 	
-	\item \textbf{\texttt{src/}} (Source): Contiene l'intero codice sorgente dell'applicazione, suddiviso nei seguenti sotto-moduli 
+	\item \textbf{\texttt{src/}} (Source): Contiene il codice sorgente dell'applicazione, suddiviso nei seguenti sotto-moduli 
 	specializzati:
 	\begin{itemize}
 		\item \textbf{\texttt{gui/}}: Contiene il codice che implementa l'interfaccia grafica che consente all'utente di navigare nel filesystem per selezionare l'immagine e inserire i parametri numerici di input ($F$ e $d$).
 		\item \textbf{\texttt{logic/}}: Contiene il nucleo computazionale dell'applicativo:
 		\begin{itemize}
 			\item \texttt{dct.py}: Contiene l'implementazione sequenziale della DCT/DCT2 definita ``fatta in casa'' ($O(N^3)$) e le funzioni di interfaccia con la libreria scientifica per la versione ``fast'' ($O(N^2 \log N)$), necessarie al confronto dei tempi di esecuzione.
-			\item \texttt{compressor.py}: Contiene l'algoritmo di compressione JPEG-like, occupandosi della segmentazione dell'immagine in macro-blocchi $F \times F$, del filtraggio delle frequenze oltre la diagonale $d$.
+			\item \texttt{compressor.py}: Contiene la logica dell'algoritmo di compressione JPEG-like, infatti si occupa della segmentazione dell'immagine in macro-blocchi $F \times F$, del filtraggio delle frequenze oltre la diagonale $d$.
 		\end{itemize}
-		\item \textbf{\texttt{test/test.py}}: Contiene Script di Landmark-Testing utilizzato per verificare la correttezza numerica e 
+		\item \textbf{\texttt{test/test.py}}: Contiene lo script di testing utilizzato per verificare la correttezza numerica e 
 		lo scaling delle funzioni implementate, confrontando i risultati della DCT monodimensionale e bidimensionale con la matrice di test 
 		$8 \times 8$ fornita nelle specifiche.
 	\end{itemize}
@@ -110,14 +114,24 @@ file presenti nella radice del progetto:
 	gestione dell'ambiente virtuale isolato, l'esclusione di file ridondanti dal controllo di versione e la stesura delle istruzioni rapide per l'installazione e l'esecuzione del programma.
 \end{itemize}
 
-\section{DCT2 e FFT}
-\subsection{Analisi delle Prestazioni e Complessità}
-L'algoritmo implementato da noi, applica la definizione classica della trasformata sfruttando la proprietà di separabilità. 
-La $\text{DCT2}$ viene quindi calcolata come due trasformate monodimensionali in cascata (prima per righe e poi per colonne) 
-tramite prodotti matrice-matrice del tipo $c = T \cdot f \cdot T^T$. Ciascun prodotto richiede l'esecuzione di cicli annidati 
-su strutture dati di dimensione $N$, portando il costo computazionale teorico a un ordine di complessità pari a $\mathcal{O}(N^3)$.
+\section{Implementazione DCT2}
+\subsection{DCT2}
+La nostra implementazione si basa sulla definizione classica della DCT2 e sfrutta la proprietà di separabilità 
+della trasformata bidimensionale. Per questo motivo abbiamo prima realizzato una DCT monodimensionale come funzione di base, 
+che per ogni vettore di lunghezza $N$ calcola i coefficienti mediante prodotti scalari con la matrice di trasformazione $D$.
 
-Al contrario, la routine della libreria ottimizzata si appoggia ad algoritmi di tipo Fast correlati alla Trasformata Rapida di Fourier 
+La DCT2 viene quindi ottenuta applicando due volte la DCT1 in cascata: prima a ciascuna riga dell'immagine e poi a ciascuna colonna 
+del risultato intermedio. In altre parole, il calcolo può essere descritto come
+\[
+c = D \cdot f \cdot D^T
+\]
+dove $f$ è la matrice dei valori del blocco e $D$ è la matrice della trasformazione DCT monodimensionale.
+
+Poiché ogni prodotto matrice-matrice richiede cicli annidati su strutture dati di dimensione $N$, l'implementazione diretta 
+segue un costo computazionale teorico dell'ordine di $\mathcal{O}(N^3)$.
+
+\subsection{FFT}
+Al contrario, la routine della libreria ottimizzata di SciPy si appoggia ad algoritmi di tipo Fast correlati alla Trasformata Rapida di Fourier 
 ($\text{FFT}$). Invece di eseguire il prodotto matriciale diretto, la $\text{FFT}$ riduce drasticamente il numero di operazioni 
 ridondanti. Sfruttando la simmetria e  la ricorsività (secondo una logica \textit{divide et impera}), il problema di dimensione $N$ 
 viene suddiviso in sottoproblemi più piccoli. Questo approccio abbatte la complessità computazionale del calcolo bidimensionale a:
@@ -127,9 +141,9 @@ viene suddiviso in sottoproblemi più piccoli. Questo approccio abbatte la compl
 dove $N^2$ rappresenta il numero totale di pixel dell'immagine, mentre il fattore logaritmico descrive l'efficienza della scomposizione 
 in frequenza.
 
-\subsubsection{Dati Sperimentali Raccolti}
+\subsection{Dati Sperimentali Raccolti}
 La validazione sperimentale è stata condotta su matrici quadrate di dimensione $N$ crescente [128, 256, 512], 
-mediando i tempi su 100 run indipendenti per abbattere il rumore di fondo. 
+mediando i tempi su 100 run indipendenti per abbattere la varianza dei tempi di esecuzione. 
 
 I risultati, riassunti nelle Tabelle~\ref{tab:tempi_manuale} \ref{tab:tempi_libreria} e il grafico in 
 Figura~\ref{fig:grafico_tempi}, confermano sperimentalmente i modelli di complessità teorica precedentemente descritti.
@@ -152,11 +166,11 @@ raddoppia, passando da $N=256$ a $N=512$, il tempo teorico di esecuzione dovrebb
 Dai dati sperimentali reali si osserva un incremento effettivo estremamente coerente con la teoria, pari a $7.93$, confermando 
 quanto detto in precedenza.
 
-Il picco registrato nel passaggio precedente da $N=128$ a $N=256$, pari a un rapporto di $10.02$ è invece dovuto a colli di 
-bottiglia hardware, in quanto matrici $128$x$128$ possono essere salvate in cache, mentre matrici $256$x$256$ saturano la memoria cache 
-della CPU (\textit{cache miss}) e dunque passano alla memoria RAM, più lenta, che altera dunque il rapporto.
-% in quanto al crescere delle matrici entrano in gioco questioni archietturali relativi a cache miss, 
-% gestione della memoria e altre ottimizzazioni RAM. 
+Il picco registrato nel passaggio precedente da $N=128$ a $N=256$, pari a un rapporto di $10.02$ è invece dovuto 
+% a colli di bottiglia hardware, in quanto matrici $128$x$128$ possono essere salvate in cache, mentre matrici $256$x$256$ saturano la memoria cache 
+% della CPU (\textit{cache miss}) e dunque passano alla memoria RAM, più lenta, che altera dunque il rapporto.
+molto probabilmente all'hardware, in quanto al crescere delle matrici entrano in gioco questioni architetturali relative a cache miss, 
+gestione della memoria e altre ottimizzazioni di basso livello. 
 
 
 \begin{table}[H]
@@ -197,46 +211,46 @@ vettorizzazione dei registri della CPU e il parallelismo hardware, abbattendo i 
 	\label{fig:grafico_tempi}
 \end{figure}
 
-\medskip
+\subsection{Conclusioni}
 In conclusione possiamo dire che al crescere di $N$, il divario prestazionale tra i due approcci diventa significativo. 
 Alla dimensione massima testata di $N=512$, la routine ottimizzata conclude il calcolo in appena $5.21$ millisecondi 
 ($5.212104 \times 10^{-3}$ s), risultando circa 2695 volte più rapida dell'algoritmo manuale da noi implementato, 
 il quale richiede invece ben $14.04$ secondi ($1.404507 \times 10^{1}$ s).
 
 \section{Analisi qualità della compressione}
-Il nostro progetto implementa un algoritmo di compressione simil-JPEG, infatti è possibile scegliere due parametri, \textbf{F} e 
-\textbf{d}, che rispettivamente rappresentano la dimensione dei blocchi e il numero dei coefficienti DCT tagliati (se d è alto taglio poco, 
-mentre se è basso taglio molto). Per quanto riguarda JPEG questi parametri sono fissati a F = 8 e d rappresenta la qualità 
-dell'immagine finale, mentre nella nostra implementazione è possibile sceglierli a piacere. 
+Il nostro progetto implementa un algoritmo di compressione ispirato a JPEG. Due parametri principali governano il processo: \textbf{F}, 
+la dimensione dei blocchi, e \textbf{d}, il numero di coefficienti DCT azzerati a partire da quelli ad alta frequenza. 
+Un valore elevato di \textbf{d} conserva più coefficienti, mentre un valore basso ne elimina di più. 
+Nel JPEG standard si utilizza tipicamente $F = 8$, e il parametro \textbf{d} si comporta come indice di qualità; 
+nella nostra implementazione entrambi i valori sono invece configurabili liberamente. 
 
-Per valutare un'immagine compressa entrano in gioco due fattori principali. Infatti è possibile sia effettuare un'analisi puramente 
-matematica, con valori come l'\textbf{MSE} (mean-square-error), il \textbf{SRN} (signal-to-noise-rate) oppure la differenza tra le 
-immagini. Queste metriche però non considerano l'aspetto soggettivo dell'immagine, infatti gli algoritmi di compressione 
-tagliano appositamente le altre frequenze, dove l'occhio umano è meno sensibile, al fine di comprimere molto l'informazione, 
-ma lasciando la qualità visiva dell'immagine buona.
+Per valutare un'immagine compressa è utile distinguere tra la qualità numerica e quella percettiva. Si possono usare metriche come 
+l'\textbf{MSE} (mean-square-error), il \textbf{SRN} (signal-to-noise ratio) o la differenza pixel per pixel, ma questi indici non 
+descrivono completamente la qualità visiva. Le tecniche di compressione basate sulla DCT eliminano infatti soprattutto le frequenze alte
+a cui l'occhio umano è meno sensibile, riducendo i dati senza degradare eccessivamente l'impressione visiva dell'immagine. 
 
-Di seguito analizziamo diverse immagini confrontando sia l'aspetto soggettivo che quello oggettivo, cercando di trarre delle conclusioni 
-su come funziona la compressione delle immagini. Abbiamo scelto come misura oggettiva il \textbf{RMSE}, la cui formula è:
-\[
-	RMSE = \sqrt{\frac{1}{MN} \sum_{i=1}^{N} \sum_{j=1}^{M} {[Y(i,j) - \hat{Y}(i,j)]^2}}
-\]
-in quanto è una misura abbastanza intuitiva (sottrae pixel per pixel le due immagini, ne calcola il quadrato e media gli errori), 
-ma al contempo esplicativa, e, a differenza dell'MSE, riscala il valore rispetto alla scala di grigi (0-255).
+In questa sezione confrontiamo diverse immagini valutando sia la resa soggettiva sia gli indicatori oggettivi. Abbiamo scelto come misura 
+numerica il \textbf{RMSE}, definito come:
+\begin{equation}
+	RMSE = \sqrt{\frac{1}{MN} \sum_{i=1}^{N} \sum_{j=1}^{M} \left[Y(i,j) - \hat{Y}(i,j)\right]^2}
+\end{equation}
+Il RMSE è intuitivo perché calcola l'errore quadratico medio tra i pixel originali e quelli ricostruiti; a differenza dell'MSE, 
+riporta il risultato sulla stessa scala dei valori di intensità (0-255).
 
-\subsubsection{Variazione del parametro di taglio d}
+\subsection{Variazione del parametro di taglio d}
 Come prima prova abbiamo usato l'immagine a scacchiera 80x80 e 
 abbiamo fissato la dimensione del blocco a $F=8$, variando il parametro $d$, per verificare la variazione di qualità dell'immagine 
-compressa. Abbiamo usato come benchmark per le altre compressioni una compressione standard con d = 5, in cui l'RMSE risulta 
-di 30.55 e la qualità visiva abbastanza degradata, ma comunque accettabile.
+compressa. Abbiamo usato come benchmark per le altre configurazioni un'impostazione standard con $d = 5$, in cui l'RMSE risulta 
+di 30.55 e la qualità visiva è abbastanza degradata, ma comunque accettabile.
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.7\textwidth]{immagini/80x80.png}
-	\caption{Immagine 80x80.bmp}
+	\caption{Compressione immagine 80x80.bmp al variare di d}
 	\label{FIG:QUADR_80}
 \end{figure}
 \begin{itemize}
 	\item \textbf{Salvando il $50\%$ delle frequenze ($d\approx8$)} l'RMSE decresce assumendo il valore di $8.89$. Dal punto di vista 
-	qualitativo, l'immagine risulta praticamente indistinguibile dall'originale. Il salvataggio dei coefficienti di ordine superiore 
+	qualitativo, l'immagine risulta praticamente indistinguibile dall'originale. Conservare i coefficienti di ordine superiore 
 	introduce nel sistema le alte frequenze spaziali, necessarie per la ricostruzione accurata dei dettagli fini e dei contorni netti.
 	\item \textbf{Salvando il $5\%$ delle frequenze ($d\approx2$)} l'RMSE aumenta a $58.42$. Questo porta ai due artefatti tipici della 
 	compressione:
@@ -249,19 +263,19 @@ di 30.55 e la qualità visiva abbastanza degradata, ma comunque accettabile.
 
 
 \noindent
-Un'osservazione interessante è che, impostando \texttt{d = 1}, l'immagine risulta suddivisa in blocchi ciascuno dei quali appare 
+Un'osservazione interessante è che, impostando $d = 1$, l'immagine risulta suddivisa in blocchi ciascuno dei quali appare 
 come una regione a tonalità di \textbf{grigio uniforme}. Questo avviene perché la maggior parte dei coefficienti ad alta frequenza 
 viene annullata dalla quantizzazione, lasciando soltanto la componente DC che corrisponde al valore medio del blocco.
 
-\subsubsection{Analisi Immagini Geometriche}
-Innanzitutto partiamo le immagini geometriche, dove sono presenti dei blocchi bianchi e neri alternati a scacchiera.
-In questa analisi si abbiamo valutato il comportamento della ricostruzione modificando il parametro $F$ a dimensioni superiori 
-($F = 8, 16, 24, 32$) e mantenendo inalterata la proporzione di taglio al $25\%$. Proviamo i valori di F e d sull'immagine 
-160x160.bmp:
+\subsection{Analisi Immagini Geometriche}
+Ora passiamo all'analisi delle immagini "geometriche", dove sono presenti dei blocchi bianchi e neri alternati a scacchiera.
+In particolare abbiamo valutato il comportamento della ricostruzione modificando il parametro $F$ a dimensioni superiori 
+($F = 8, 16, 24, 32$) e mantenendo inalterata la proporzione di taglio al $25\%$. Proviamo i valori di $F$ e $d$ sull'immagine 
+160x160\.bmp:
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.7\textwidth]{immagini/Confronto_quadrati.png}
-	\caption{Immagine 160x160.bmp}
+	\caption{Compressione immagine 160x160.bmp al variare di F}
 	\label{FIG:QUADR}
 \end{figure}
 	
@@ -275,21 +289,21 @@ In questa analisi si abbiamo valutato il comportamento della ricostruzione modif
 			24 & 17 & 26.56\% & 164.92 \\
 			32 & 22 & 24.71\% & 32.42  \\ \hline
 		\end{tabular}
-		\caption{RMSE al variare del blocco $F$, con tasso di taglio costante al 25\%.}
+		\caption{RMSE al variare del blocco $F$, con tasso di taglio a circa 25\%.}
 		\label{tab:esperimento_scacchiera}
 \end{table}
 
 Questo comportamento evidenzia il legame tra la dimensionalità del blocco $F$ e la periodicità del segnale geometrico 
 quando si applica il taglio diretto della matrice. Infatti nel caso con $F=24$ ($\text{RMSE} = 164.92$), poiché la dimensione 
 originale dell'immagine ($160$) non è divisibile per $24$, l'operazione di taglio rimuove gli ultimi $16$ pixel della matrice 
-($160 - 24 \times 6 = 16$). Questo troncamento asimmetrico spezza a metà l'ultima fila di scacchi geometrici, aumentando 
-di molto il RMSE. Anche visivamente dalla figura \ref{FIG:QUADR}, si può notare questo fenomeno, 
-infatti la qualità generale visiva rimane abbastanza invariata per tutte le compressioni, ma nel caso con F = 24 
+($160 - 24 \times 6 = 16$). Questo troncamento asimmetrico spezza a metà l'ultima fila della scacchiera, aumentando 
+di molto il RMSE. Anche visivamente dalla figura \ref{FIG:QUADR}, si può notare questo fenomeno: la qualità generale visiva rimane 
+abbastanza invariata per tutte le compressioni, ma nel caso con $F = 24$ 
 il bordo destro risulta troncato in maniera evidente.
 
-\subsubsection{Analisi Immagini Naturali}
-In questa sezione confrontiamo due immagini naturali, in particolare quella del cervo (deer.bmp \ref{FIG:CERVO}) e quella del ponte 
-(bridge.bmp \ref{FIG:PONTE}), con parametri F = 32 e d = 20.
+\subsection{Analisi Immagini Reali}
+In questa sezione confrontiamo due immagini reali, in particolare quella del cervo (deer.bmp \ref{FIG:CERVO}) e quella del ponte 
+(bridge.bmp \ref{FIG:PONTE}), con parametri $F = 32$ e $d = 20$.
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth]{immagini/ponte.png}
@@ -302,20 +316,21 @@ In questa sezione confrontiamo due immagini naturali, in particolare quella del 
 \end{figure}
 
 Visivamente è facile notare che l'immagine del ponte è rimasta praticamente invariata, mentre quella del cervo, seppur mantenendo 
-una buona qualità generale, presenta alcuni artefatti nelle zone di alta frequenza (baffi, sopra il muso, ...). Soprendentemente 
-in questo caso l'RMSE non riflette questa osservazione, infatti è uguale a \texttt{38.53} per il ponte, mentre \texttt{33.23} 
-per il cervo; infatti l'RMSE misura errori pixel-per-pixel e non tiene conto della sensibilità percettiva dell'occhio umano. 
+una buona qualità generale, presenta alcuni artefatti nelle zone di alta frequenza (baffi, muso, zone di luce). Soprendentemente 
+in questo caso il RMSE non riflette questa osservazione, infatti è uguale a \texttt{38.53} per il ponte, mentre \texttt{33.23} 
+per il cervo. Questo fenomeno è causato dal fatto che il RMSE misura errori pixel-per-pixel e non tiene conto della sensibilità percettiva 
+dell'occhio umano. 
 Piccoli errori concentrati su dettagli strutturalmente importanti (come baffi o contorni) possono risultare molto visibili pur 
 producendo un RMSE contenuto.
 
-\subsubsection{Conclusioni}
+\subsection{Conclusioni}
 Provando altre immagini, è facile effettuare alcune osservazioni. L'algoritmo di compressione si comporta in modo \textit{"poco prevedibile"}
-sulle immagini "matematiche", diversamente da quelle reali, che generalmente mantengo una qualità maggiore. 
-Generalmente è comunque possibile notare che questo algoritmo di compressione è impreciso sulle zone di alta frequenza (cioè dove 
+sulle immagini "matematiche", diversamente da quelle reali, che generalmente mantengono una qualità maggiore. 
+In generale, su tutti i tipi di immagini, è comunque possibile notare che questo algoritmo di compressione è impreciso sulle zone di alta frequenza (cioè dove 
 il colore cambia repentinamente), infatti, ad esempio, nell'immagine del gradiente (gradient.bmp), dato che il cambiamento di colore è 
-graduale e senza variazioni, l'rmse è minimo.
+graduale e senza variazioni, il RMSE è minimo.
 
-Si può quindi concludere che l'algoritmo a parità di parametri (F e d) non comprime allo stesso modo, ma è molto dipendente dalla 
+Si può quindi concludere che l'algoritmo a parità di parametri ($F$ e $d$) non comprime allo stesso modo, ma è molto dipendente dalla 
 struttura dell'immagine.
 
 \end{document}
