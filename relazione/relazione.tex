@@ -56,7 +56,7 @@ Gli obiettivi del progetto si articolano in due fasi principali:
 \section{Struttura della libreria}
 Il software è stato sviluppato con il linguaggio Python e strutturato in modo modulare per garantire separazione tra la logica 
 di calcolo matematico, l'interfaccia utente, i test di validazione. Di seguito viene descritto il ruolo di ciascuna cartella e 
-file presenti mel progetto:
+file presenti nel progetto:
 
 	\begin{figure}[H]
 		\centering % Centra il box rispetto alla pagina
@@ -120,26 +120,86 @@ La nostra implementazione si basa sulla definizione classica della DCT2 e sfrutt
 della trasformata bidimensionale. Per questo motivo abbiamo prima realizzato una DCT monodimensionale come funzione di base, 
 che per ogni vettore di lunghezza $N$ calcola i coefficienti mediante prodotti scalari con la matrice di trasformazione $D$.
 
-La DCT2 viene quindi ottenuta applicando due volte la DCT1 in cascata: prima a ciascuna riga dell'immagine e poi a ciascuna colonna 
+Nel codice il vettore di ingresso della DCT monodimensionale è chiamato \texttt{f\_vect}, mentre l'operazione 
+bidimensionale lavora su un blocco quadrato \texttt{block} di dimensione $N\times N$. 
+
+La matrice di trasformazione $D$ viene costruita in \texttt{src/logic/dct.py} nella funzione \texttt{compute\_D}: 
+\[\texttt{D = alpha\_vect.reshape(N,1)*np.cos(k*np.pi*(2*i+1)/(2*N))}\]
+Qui \texttt{alpha\_vect} contiene i fattori di normalizzazione ortonormali, eseguiti secondo lo scaling ortogonale richiesto dalla specifica:
+\begin{verbatim}
+alpha_vect[0] = N**(-0.5)
+alpha_vect[1:] = (N**(-0.5)) * np.sqrt(2)
+\end{verbatim}
+mantenendo la trasformata DCT ortogonale. Il termine \texttt{np.cos(...)} definisce le basi coseno della DCT.
+
+La DCT2 viene quindi ottenuta applicando due volte la DCT1 in cascata: prima a ciascuna riga del blocco $F$ e poi a ciascuna colonna 
 del risultato intermedio. In altre parole, il calcolo può essere descritto come
 \[
-c = D \cdot f \cdot D^T
+C = D \cdot F \cdot D^T
 \]
-dove $f$ è la matrice dei valori del blocco e $D$ è la matrice della trasformazione DCT monodimensionale.
+dove $F$ è la matrice dei valori del blocco e $D$ è la matrice della trasformazione DCT monodimensionale.
+
+Nel codice, la funzione \texttt{my\_dct1d} esegue il prodotto vettore-matrice 
+\[
+\mathbf{c} = D \cdot \mathbf{f}
+\]
+che corrisponde alla riga \texttt{c\_vect = D @ f\_vect}. La DCT2 si ottiene applicando questa funzione prima alle righe e poi alle colonne del blocco.
 
 Poiché ogni prodotto matrice-matrice richiede cicli annidati su strutture dati di dimensione $N$, l'implementazione diretta 
 segue un costo computazionale teorico dell'ordine di $\mathcal{O}(N^3)$.
 
 \subsection{FFT}
-Al contrario, la routine della libreria ottimizzata di SciPy si appoggia ad algoritmi di tipo Fast correlati alla Trasformata Rapida di Fourier 
-($\text{FFT}$). Invece di eseguire il prodotto matriciale diretto, la $\text{FFT}$ riduce drasticamente il numero di operazioni 
-ridondanti. Sfruttando la simmetria e  la ricorsività (secondo una logica \textit{divide et impera}), il problema di dimensione $N$ 
-viene suddiviso in sottoproblemi più piccoli. Questo approccio abbatte la complessità computazionale del calcolo bidimensionale a:
+La libreria che abbiamo utilizzato per calcolare la \textbf{DCT} in modo efficiente è \texttt{scipy.fftpack}. La \textbf{FFT} è una trasformata 
+veloce della \textbf{DFT}, quindi ci è sorta spontanea la domanda su cosa centrassero DCT e FFT. Innanzitutto è importante 
+specificare che all'interno di \texttt{scipy.fftpack.dct} sono presenti diversi tipi di DCT, noi abbiamo usato la \texttt{dctn}, la 
+cui $n$ specifica il fatto che è n-dimensionale. L'API per questa funzione è la seguente:
+\begin{center}
+	\texttt{dctn(x, type=2, shape=None, axes=None, norm=None, overwrite\_x=False)}
+\end{center}
+La funzione ha come valore di ritorno \texttt{y}, cioè l'array trasformato.
+In cui i parametri più importanti sono: 
+\begin{itemize}
+	\item \texttt{x}: vettore di ingresso (nel nostro caso il blocco 2D);
+	\item \texttt{type}: tipologia di DCT;
+	\item \texttt{norm}: fattore di normalizzazione.
+\end{itemize}
+\'E essenziale scegliere la versione della DCT \texttt{type=2}, in quanto è quella che abbiamo visto nel corso, infatti applica la formula:
+\[
+y_k = 2 \sum_{n=0}^{N-1} x_n \cos \left( \frac{\pi k (2n + 1)}{2N} \right)
+\]
+Inoltre con il parametro \texttt{norm='ortho'}, applica i coefficienti per ortonormalizzare la base:
+\[
+f = \begin{cases} 
+\sqrt{\frac{1}{4N}} & \text{if } k = 0, \\ 
+\sqrt{\frac{1}{2N}} & \text{otherwise} 
+\end{cases}
+\]
+(\textit{Nota:} in questo paragrafo abbiamo riportato esattamente le formule presenti nella documentazione di SciPy, quest'ultima 
+moltiplica inizialmente $y_k$ per 2, ma poi lo riscala con i fattori di normalizzazione). 
+\vspace{1em}
+
+Internamente la libreria per calcolare la DCT (\texttt{c\_vector}) utilizza la FFT, infatti esiste uno stretto legame tra DFT e DCT, in quanto 
+è possibile rendere il segnale (\texttt{f\_vector}) simmetrico per far sì che la DFT e la DCT abbiano lo stesso risultato. 
+In particolare la FFT procede in modo ricorsivo con il divide-et-impera, dunque senza calcolare la matrice $D$ dei coefficienti:
+\[
+\begin{aligned}
+X_k &= \sum_{n=0}^{N-1} x_n \cdot e^{-i2\pi kn/N} \\
+&= \sum_{m=0}^{N/2-1} x_{2m} \cdot e^{-i2\pi k(2m)/N} + \sum_{m=0}^{N/2-1} x_{2m+1} \cdot e^{-i2\pi k(2m+1)/N} \\
+&= \sum_{m=0}^{N/2-1} x_{2m} \cdot e^{-i2\pi km/(N/2)} + e^{-i2\pi k/N} \sum_{m=0}^{N/2-1} x_{2m+1} \cdot e^{-i2\pi km/(N/2)}
+\end{aligned}
+\]
+Cioè, si continua a dividere il vettore in ingresso finchè non si raggiunge il caso base che corrisponde a una 
+DFT di lunghezza N = 2, in particolare:
+Per k = 0
+\begin{align*}
+\text{Per } k = 0: \quad X_0 &= x_0 \cdot e^{0} + e^{0} \cdot x_1 \cdot e^{0} = x_0 + x_1 \\
+\text{Per } k = 1: \quad X_1 &= x_0 \cdot e^{0} + e^{-i\pi} \cdot x_1 \cdot e^{0} = x_0 - x_1
+\end{align*}
+Questa scomposizione riduce il costo computazionale monodimensionale $\mathcal{O}(N \log_2 N)$ (infatti l'algoritmo è molto simile a \texttt{merge-sort}).
+Nel caso 2D il costo totale diventa quindi:
 \begin{equation}
 	\mathcal{O}(N^2 \log_2 N)
 \end{equation}
-dove $N^2$ rappresenta il numero totale di pixel dell'immagine, mentre il fattore logaritmico descrive l'efficienza della scomposizione 
-in frequenza.
 
 \subsection{Dati Sperimentali Raccolti}
 La validazione sperimentale è stata condotta su matrici quadrate di dimensione $N$ crescente [128, 256, 512], 
@@ -167,8 +227,6 @@ Dai dati sperimentali reali si osserva un incremento effettivo estremamente coer
 quanto detto in precedenza.
 
 Il picco registrato nel passaggio precedente da $N=128$ a $N=256$, pari a un rapporto di $10.02$ è invece dovuto 
-% a colli di bottiglia hardware, in quanto matrici $128$x$128$ possono essere salvate in cache, mentre matrici $256$x$256$ saturano la memoria cache 
-% della CPU (\textit{cache miss}) e dunque passano alla memoria RAM, più lenta, che altera dunque il rapporto.
 molto probabilmente all'hardware, in quanto al crescere delle matrici entrano in gioco questioni architetturali relative a cache miss, 
 gestione della memoria e altre ottimizzazioni di basso livello. 
 
